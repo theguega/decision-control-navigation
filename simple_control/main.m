@@ -1,39 +1,26 @@
-% Charger les points depuis le fichier
-points = load('points.txt');
+clear;
+clc;
 
-% Trouver les limites du plot en fonction des points
-min_x = min(points(:, 1)) - 1;
-max_x = max(points(:, 1)) + 1;
-min_y = min(points(:, 2)) - 1;
-max_y = max(points(:, 2)) + 1;
-
-% Paramètres du véhicule et du contrôleur PID
-x0 = 0;  % Assurez-vous que ces coordonnées sont correctement initialisées ici
-y0 = 0;  % Assurez-vous que ces coordonnées sont correctement initialisées ici
-theta0 = 0;
-v = 1;
-dt = 0.1;
-kp = 1;
-ki = 0.1;
-kd = 0.01;
-
-% Initialiser le véhicule autonome
-vehicle = AutonomousVehicle(x0, y0, theta0, v, dt, kp, ki, kd);
-
-% Créer une figure avec un axe fixe et spécifier les limites de l'axe
+coordinates = load('points.txt');
+window_size = 20;
 figure;
 ax = gca;
-axis(ax, [min_x max_x min_y max_y]);
+axis(ax, [-10 10 -10 10]);
 
-% Afficher les points en bleu
-plot(ax, points(:,1), points(:,2), 'bo', 'MarkerSize', 10, 'LineWidth', 2);
-hold(ax, 'on');
+vehicle = AutonomousVehicle(0, 0, 0, 0);
 
-% Boucle pour déplacer le véhicule vers chaque point
-for i = 1:size(points, 1)
-    target_x = points(i, 1);
-    target_y = points(i, 2);
+plot(ax, coordinates(:, 1), coordinates(:, 2), 'rx', 'MarkerSize', 10, 'LineWidth', 2);
+hold on;
+
+cruising_speed = 2;
+arrival_speed = 0.75;
+
+for i = 1:size(coordinates, 1)
+    target_x = coordinates(i, 1);
+    target_y = coordinates(i, 2);
+    
+    % Use moveToPoint method
     disp(['Moving to point (' num2str(target_x) ', ' num2str(target_y) ')']);
     disp(['Vehicle pos : (' num2str(vehicle.x) ', ' num2str(vehicle.y) ')']);
-    vehicle.moveToPoint(target_x, target_y, ax);
+    vehicle.moveToPoint(target_x, target_y, cruising_speed, arrival_speed, ax);
 end
