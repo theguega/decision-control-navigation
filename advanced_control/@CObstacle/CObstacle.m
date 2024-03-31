@@ -1,17 +1,17 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Lounis ADOUANE                                                     %
-%% Université de Technologie de Compiègne (UTC)                       %
-%% SY28 :: Département Génie Informatique (GI)                        %
+%% Universitï¿½ de Technologie de Compiï¿½gne (UTC)                       %
+%% SY28 :: Dï¿½partement Gï¿½nie Informatique (GI)                        %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Part I : Planning and control of mobile robots                     %
-%% Théorème de stabilité de Lyapunov et méthode des cycles-limites    %
+%% Thï¿½orï¿½me de stabilitï¿½ de Lyapunov et mï¿½thode des cycles-limites    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Dernière modification le 21/03/2022                                %
+%% Derniï¿½re modification le 21/03/2022                                %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 function Obstacle = CObstacle(Position, Rayon, Marge, Vitesse)
 % CObstacle class constructor
-% Créer un Obstacle avec les paramètres d'entrée
+% Crï¿½er un Obstacle avec les paramï¿½tres d'entrï¿½e
 global Rrobot
 
 if nargin == 0

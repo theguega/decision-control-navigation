@@ -8,7 +8,12 @@ To run simple_control :
 To run advanced_control :
 
 > open advanced_control directory  
-> run ProgrammePrincipal.m  
+> run ProgrammePrincipal.m
+
+Next step :
+
+> conversion of advanced_control in OOP
+> and new controls (line avoidance, new obstacles...)
 
 **Objectives :**  
 - Integrate advanced control in oriented object simulation
