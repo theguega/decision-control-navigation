@@ -14,8 +14,12 @@ classdef obstacle < handle
             obj.marge = marge;
         end
         
-        function pos = getPos(obj)
-            pos = [obj.x,obj.y];
+        function x = getX(obj)
+            x = obj.x;
+        end
+        
+        function y = getY(obj)
+            y = obj.y;
         end
         
         function r = getRayonInfluence(obj)
