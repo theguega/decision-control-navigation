@@ -11,11 +11,13 @@ classdef vehicle < handle
         d = 3;  % Largeur des essieux
         r = 1;     % Rayon des roues
         
+        dt=0.1;
+        
         to_avoid = obstacle(0,0,0,0); %obstacle to avoid
         distance_to_avoid=0;
         
         RayonCycleLimite=0;
-
+        
         controller = 1;
     end
     
@@ -88,27 +90,29 @@ classdef vehicle < handle
             
             %check if there is an obstacle to avoid
             for i=1:size(obstacles,2)
-                dist = sqrt((obstacle(i).getX() - obj.x)^2 + (obstacle(i).getY() - obj.y)^2);
-                if dist<=obstacle(i).getRayonInfluence()
+                dist = sqrt( (obstacles(i).getX() - obj.x)^2 + (obstacles(i).getY() - obj.y)^2);
+                if dist<=obstacles(i).getRayonInfluence()
                     %if the actual obstacle is neareast than the previous one
                     if dist<obj.distance_to_avoid
                         obj.to_avoid=obstacle(i);
                         obj.distance_to_avoid=dist;
+                        obj.controller=2;
                     end
                 end
             end
             
             % if there is an obstacle
-            if obj.to_avoid(1)~=null
-                obj.controller = 2;
+            if obj.controller==2
                 datas=obj.var_obstacle_avoidance(target);
             else
                 datas=obj.var_attraction(target);
             end
-
+            
             if obj.controller == 1
+                disp("control_attraction")
                 CommandeReelle=obj.control_attraction(datas);
             else
+                disp("control_obstacle_avoidance")
                 CommandeReelle=obj.control_obstacle_avoidance(datas);
             end
         end
@@ -121,9 +125,9 @@ classdef vehicle < handle
             
             ThetaC=atan2(Ey,Ex);
             
-            ThetaTilde=SoustractionAnglesAtan2(ThetaC, Theta);
+            ThetaTilde=SoustractionAnglesAtan2(ThetaC, obj.theta);
             
-            datas = [Ecart; ThetaTilde; Ex; Ey; Theta];
+            datas = [Ecart; ThetaTilde; Ex; Ey; obj.theta];
         end
         
         function datas=var_obstacle_avoidance(obj, target)
@@ -137,8 +141,8 @@ classdef vehicle < handle
             Alpha = atan2(Y_D_O, X_D_O);
             
             %Calcul de la matrice de passage du repere obtstacle (R_O) au repere absolu (R_A)
-            T_O_A = inv ([cos(Alpha) -sin(Alpha) 0 PositionObstacle(1)
-                sin(Alpha) cos(Alpha) 0 PositionObstacle(2)
+            T_O_A = inv ([cos(Alpha) -sin(Alpha) 0 obj.to_avoid.getX()
+                sin(Alpha) cos(Alpha) 0 obj.to_avoid.getY()
                 0 0 1 0
                 0 0 0 1]);
             
@@ -157,18 +161,18 @@ classdef vehicle < handle
             X_dot = sign(Y_Prime) * obj.y + obj.x * ((obj.RayonCycleLimite^2) - (obj.x^2) - (obj.y^2));
             Y_dot = -obj.x + obj.y * ((obj.RayonCycleLimite^2) - (obj.x^2) - (obj.y^2));
             ThetaC = atan2(Y_dot, X_dot);
-
+            
             X0 = [X_dot, Y_dot];
-            [~,Xc] = ode23('EquationDiff_Tourbillon',[0, 0.2],X0);
-            ThetaC_p = atan2((Xc(2,2)-Xc(1,2)), (Xc(2,1)-Xc(1,1)));
-
-            ThetaTilde=SoustractionAnglesAtan2(ThetaC, Theta);
-
+            Xc = ode23(@(t, y) EquationDiff_Tourbillon(t, y, obj.RayonCycleLimite), [0, 0.2], X0);
+            ThetaC_p = atan2((Xc.y(2, 2) - Xc.y(1, 2)), (Xc.y(2, 1) - Xc.y(1, 1)));
+            
+            ThetaTilde=SoustractionAnglesAtan2(ThetaC, obj.theta);
+            
             %Param�tres de commande
             datas = [ThetaTilde; ThetaC_p; sign(Y_Prime)];
         end
-
-        function CommandeReelle=control_attraction(datas)
+        
+        function CommandeReelle=control_attraction(obj, datas)
             %Donnees = [Ecart; ThetaTilde; Ex; Ey; ThetaReel];
             Ecart = datas(1);
             %ThetaTilde = datas(2);
@@ -183,9 +187,9 @@ classdef vehicle < handle
                 %%La position du point effectif (dispos� sur le robot) � asservir sur la consigne
                 l1 = 0.4; %Selon l'axe x (Devant le robot)
                 %l2 = 0;   %Selon l'axe y (A c�t� du robot)
-                K1 = 0.1; 
-                K2 = 0.1; 
-                %V1 =  K1*Ex; 
+                K1 = 0.1;
+                K2 = 0.1;
+                %V1 =  K1*Ex;
                 %V2 =  K2*Ey;
                 %%
                 M = [cos(ThetaReel), -l1*sin(ThetaReel);
@@ -194,18 +198,23 @@ classdef vehicle < handle
                 K = [K1;K2];
                 Commande = K.*(inv(M)*E);
                 %%
-                V = Vmax; 
+                V = Vmax;
                 W = Commande(2);
             else
                 V = 0;
                 W = 0;
             end
             
+            %saturate output
+            if W>0.5
+                W=0.5;
+            end
+            
             lyapunov = 0.5*(Ex^2+Ey^2);
             CommandeReelle = [V, W, lyapunov];
         end
         
-        function CommandeReelle=control_obstacle_avoidance(datas)
+        function CommandeReelle=control_obstacle_avoidance(obj, datas)
             %Donnees = [ThetaTilde; ThetaC_p];
             ThetaTilde = datas(1);
             ThetaC_p = datas(2);
@@ -214,19 +223,37 @@ classdef vehicle < handle
             Vmax = 0.5;
             
             Vmax = 0.5;
-
+            
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % Premier type de commande 
+            % Premier type de commande
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-            Kp = 15; 
+            
+            Kp = 15;
             V = Vmax;
             W = ThetaC_p + Kp*ThetaTilde;
-
-            lyapunov = 0.5*rad2deg(ThetaTilde)^2/10; 
+            
+            lyapunov = 0.5*rad2deg(ThetaTilde)^2/10;
             CommandeReelle = [V, W, lyapunov];
         end
-               
+        
+        %setter
+        function update_pos(obj, CommandeReelle)
+            %update the position of the vehicle
+            obj.v = CommandeReelle(1);
+            obj.w = CommandeReelle(2);
+            
+            obj.x = obj.x + obj.v * cos(obj.theta) * obj.dt;
+            obj.y = obj.y + obj.v * sin(obj.theta) * obj.dt;
+            obj.theta = obj.theta + obj.w * obj.dt;
+        end
+        
+        function dist=get_distance_object(obj, object)
+            dist=sqrt((obj.x-object.getX())^2+(obj.y-object.getY())^2);
+        end
+        
+        function dist=get_distance_point(obj, target)
+            dist=sqrt((obj.x-target(1))^2+(obj.y-target(2))^2);
+        end
         
         %getters
         function x = getX(obj)
@@ -247,33 +274,6 @@ classdef vehicle < handle
         
         function w = getW(obj)
             w = obj.w;
-        end
-
-        function ThetaTilde=SoustractionAnglesAtan2(ThetaC, Theta)
-            if le(ThetaC, 0) %ThetaC<=0 %Exprimer l'angle toujours en positif (0�->2pi)
-                ThetaC=(2*pi)+ThetaC;
-            end
-        
-            if le(Theta, 0)% Si Theta<=0
-                Theta=(2*pi)+Theta;
-            end
-        
-            ThetaTilde = ThetaC - Theta;
-        
-            if ge(ThetaTilde,pi) %Si ThetaTilde >= pi %Exprimer l'angle (compris entre -pi et pi)
-                ThetaTilde = -((2*pi)-ThetaTilde);
-            end
-        
-            if le(ThetaTilde,-pi) %Si ThetaTilde >= pi %Exprimer l'angle (compris entre -pi et pi)
-                ThetaTilde = ((2*pi)+ThetaTilde);
-            end
-        
-            if (le(ThetaTilde, -pi) || gt(ThetaTilde, pi))
-                disp('ATTENTION ANGLES THETA_Tilde');
-                disp(ThetaC);
-                disp(Theta);
-                disp(ThetaTilde);
-            end
         end
     end
 end

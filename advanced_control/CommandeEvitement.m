@@ -1,12 +1,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Lounis ADOUANE                                                     %
-%% Université de Technologie de Compiègne (UTC)                       %
-%% SY28 :: Département Génie Informatique (GI)                        %
+%% Universitï¿½ de Technologie de Compiï¿½gne (UTC)                       %
+%% SY28 :: Dï¿½partement Gï¿½nie Informatique (GI)                        %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Part I : Planning and control of mobile robots                     %
-%% Théorème de stabilité de Lyapunov et méthode des cycles-limites    %
+%% Thï¿½orï¿½me de stabilitï¿½ de Lyapunov et mï¿½thode des cycles-limites    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Dernière modification le 21/03/2022                                %
+%% Derniï¿½re modification le 21/03/2022                                %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 function CommandeReelle = CommandeEvitement(Donnees)
@@ -19,13 +19,13 @@ ThetaC_p = Donnees(2);
 Vmax = 0.5;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Premier type de commande 
+% Premier type de commande
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Kp = 15; 
+Kp = 15;
 V = Vmax;
 W = ThetaC_p + Kp*ThetaTilde;
 
-ValeurFonctionLyapunov = 0.5*rad2deg(ThetaTilde)^2/10; 
+ValeurFonctionLyapunov = 0.5*rad2deg(ThetaTilde)^2/10;
 
 CommandeReelle = [V, W, ValeurFonctionLyapunov];
