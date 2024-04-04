@@ -205,11 +205,6 @@ classdef vehicle < handle
                 W = 0;
             end
             
-            %saturate output
-            if W>0.5
-                W=0.5;
-            end
-            
             lyapunov = 0.5*(Ex^2+Ey^2);
             CommandeReelle = [V, W, lyapunov];
         end
