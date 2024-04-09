@@ -35,14 +35,9 @@ classdef obstacle < handle
             %cercle de sécurité
             xsecu = (obj.r + obj.marge) * cos(th) + obj.x;
             ysecu = (obj.r + obj.marge) * sin(th) + obj.y;
-            
-            figure(1)
-            hold on
-            plot(obj.x,obj.y,'k+','LineWidth',1)
-            plot(xobst,yobst,'k','LineWidth',2)
-            plot(xsecu,ysecu,'k:','LineWidth',2)
-            axis equal
-            grid on
+            plot(obj.x,obj.y,'k+','Color','b','LineWidth',1)
+            plot(xobst,yobst,'k','Color','b','LineWidth',2)
+            plot(xsecu,ysecu,'k:','Color','b','LineWidth',2)
         end
     end
 end

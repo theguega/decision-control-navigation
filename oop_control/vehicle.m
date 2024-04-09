@@ -65,10 +65,7 @@ classdef vehicle < handle
             %===========================
             % Trace du Robot Mobile  ||
             %===========================
-            figure(1)
-            hold on
             plot(obj.x,obj.y,'r+');              % Trace du centre de l'essieu arriere
-            grid on
             %line([xe xA],[ye yA])         % Trace de l'empattement -- relie (x,y) e (xA,yA)
             %plot(xA, yA, 'b+')            % Trace du devant du robot
             line([xArG xArD],[yArG yArD])                           % Trace de l'essieu arriere -- relie (xArG,yArG) e (xArD,yArD)
@@ -109,7 +106,6 @@ classdef vehicle < handle
             end
             
             if obj.controller == 1
-                disp("control_attraction")
                 CommandeReelle=obj.control_attraction(datas);
             else
                 disp("control_obstacle_avoidance")

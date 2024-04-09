@@ -1,10 +1,20 @@
 clear, clc, close all;
 
+%plot map
+scenario = drivingScenario;
+roadNetwork(scenario,'OpenStreetMap','utac.osm');
+plot(scenario);
+hold on;
+
+xlim([-50 150]);
+ylim([-30 80]);
+
 %pos_obst = load("obstacles.txt");
-pos_obst=[];
+pos_obst=load("obstacles.txt");
 targets = load("target.txt");
 
 %init obstacles
+
 obstacles = [];
 for i = 1:size(pos_obst, 1)
     obstacles = [obstacles, obstacle(pos_obst(i, 1), pos_obst(i, 2), pos_obst(i, 3), pos_obst(i, 4))];
@@ -14,8 +24,6 @@ end
 %init vehicle
 robot = vehicle(targets(1,1), targets(1,2), 0, 0, 0);
 robot.plot()
-
-hold on, grid on;
 
 % Plot all targets
 for i = 1:size(targets, 1)
@@ -28,13 +36,14 @@ for j = 1:size(targets, 1)
     plot([robot.getX(); target(1)], [robot.getY(); target(2)], ':');
     
     % Move towards the target until reaching it
-    i=0
+    i=0;
     while(robot.get_distance_point(target) > 1)
         res = robot.controller_selection(obstacles, target);
         robot.update_pos(res);
-        i=i+1
-        if (~rem(i, 10)) %tous les multiple de 10
+        i=i+1;
+        if (~rem(i, 50)) %tous les multiple de 10
             robot.plot();
+            drawnow;
         end
     end
 end
