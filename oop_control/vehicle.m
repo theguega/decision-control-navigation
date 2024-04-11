@@ -17,6 +17,7 @@ classdef vehicle < handle
         distance_to_avoid=0;
         
         RayonCycleLimite=0;
+        SensEvitementObstacle=0;
         
         controller = 1;
     end
@@ -89,27 +90,26 @@ classdef vehicle < handle
             for i=1:size(obstacles,2)
                 dist = sqrt( (obstacles(i).getX() - obj.x)^2 + (obstacles(i).getY() - obj.y)^2);
                 if dist<=obstacles(i).getRayonInfluence()
+                    obj.distance_to_avoid=dist;
                     %if the actual obstacle is neareast than the previous one
-                    if dist<obj.distance_to_avoid
-                        obj.to_avoid=obstacle(i);
+                    if dist<=obj.distance_to_avoid
+                        obj.to_avoid=obstacles(i);
                         obj.distance_to_avoid=dist;
                         obj.controller=2;
                     end
+                else
+                    obj.to_avoid=obstacle(0,0,0,0);
+                    obj.controller=1;
                 end
             end
             
-            % if there is an obstacle
+            % get appropriates data
             if obj.controller==2
                 datas=obj.var_obstacle_avoidance(target);
+                CommandeReelle=obj.control_obstacle_avoidance(datas);
             else
                 datas=obj.var_attraction(target);
-            end
-            
-            if obj.controller == 1
                 CommandeReelle=obj.control_attraction(datas);
-            else
-                disp("control_obstacle_avoidance")
-                CommandeReelle=obj.control_obstacle_avoidance(datas);
             end
         end
         
@@ -138,9 +138,9 @@ classdef vehicle < handle
             
             %Calcul de la matrice de passage du repere obtstacle (R_O) au repere absolu (R_A)
             T_O_A = inv ([cos(Alpha) -sin(Alpha) 0 obj.to_avoid.getX()
-                sin(Alpha) cos(Alpha) 0 obj.to_avoid.getY()
-                0 0 1 0
-                0 0 0 1]);
+                          sin(Alpha) cos(Alpha) 0 obj.to_avoid.getY()
+                          0 0 1 0
+                          0 0 0 1]);
             
             CoordonneeRepereObstacle = T_O_A * [obj.x; obj.y; 0; 1];
             
@@ -153,6 +153,10 @@ classdef vehicle < handle
             else %Periode de l'extraction du cycle limite
                 obj.RayonCycleLimite=obj.RayonCycleLimite+0.03; %Pour que le changement de rayon soit en douceur.
             end
+
+            if obj.SensEvitementObstacle ~= 0 %=> Qu'il faut forcer le sens de rotation
+                Y_Prime = obj.SensEvitementObstacle;
+            end
             
             X_dot = sign(Y_Prime) * obj.y + obj.x * ((obj.RayonCycleLimite^2) - (obj.x^2) - (obj.y^2));
             Y_dot = -obj.x + obj.y * ((obj.RayonCycleLimite^2) - (obj.x^2) - (obj.y^2));
@@ -164,7 +168,7 @@ classdef vehicle < handle
             
             ThetaTilde=SoustractionAnglesAtan2(ThetaC, obj.theta);
             
-            %Param�tres de commande
+            %Parametres de commande
             datas = [ThetaTilde; ThetaC_p; sign(Y_Prime)];
         end
         
@@ -179,10 +183,10 @@ classdef vehicle < handle
             %Vmax = 1; %1m/s -> 3.6km/h
             Vmax = 0.5;
             
-            if (gt(Ecart,0.2)) % Pour appliquer cette commande uniquement quand le robot n'est pas tout pr�s de la cible
-                %%La position du point effectif (dispos� sur le robot) � asservir sur la consigne
+            if (gt(Ecart,0.2)) % Pour appliquer cette commande uniquement quand le robot n'est pas tout pres de la cible
+                %%La position du point effectif (dispose sur le robot) et asservir sur la consigne
                 l1 = 0.4; %Selon l'axe x (Devant le robot)
-                %l2 = 0;   %Selon l'axe y (A c�t� du robot)
+                %l2 = 0;   %Selon l'axe y (A côté du robot)
                 K1 = 0.1;
                 K2 = 0.1;
                 %V1 =  K1*Ex;
