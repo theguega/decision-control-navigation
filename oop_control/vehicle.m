@@ -17,7 +17,6 @@ classdef vehicle < handle
         distance_to_avoid=0;
         
         RayonCycleLimite=0;
-        SensEvitementObstacle=0;
         
         controller = 1;
     end
@@ -89,7 +88,7 @@ classdef vehicle < handle
             %check if there is an obstacle to avoid
             for i=1:size(obstacles,2)
                 dist = sqrt( (obstacles(i).getX() - obj.x)^2 + (obstacles(i).getY() - obj.y)^2);
-                if dist<=obstacles(i).getRayonInfluence()
+                if dist<=(obstacles(i).getRayonInfluence()+obj.getd())
                     obj.distance_to_avoid=dist;
                     %if the actual obstacle is neareast than the previous one
                     if dist<=obj.distance_to_avoid
@@ -149,27 +148,22 @@ classdef vehicle < handle
             
             % Obtention du Rayon du cycle-limite a suivre
             if (X_Prime <= 0) %Alors Attraction vers le cycle limite
-                obj.RayonCycleLimite=obj.to_avoid.getRayonInfluence()-0.3;
+                obj.RayonCycleLimite=(obj.to_avoid.getRayonInfluence()+obj.getd())-0.3;
             else %Periode de l'extraction du cycle limite
                 obj.RayonCycleLimite=obj.RayonCycleLimite+0.03; %Pour que le changement de rayon soit en douceur.
             end
 
-            if obj.SensEvitementObstacle ~= 0 %=> Qu'il faut forcer le sens de rotation
-                Y_Prime = obj.SensEvitementObstacle;
-            end
-            
-            X_dot = sign(Y_Prime) * obj.y + obj.x * ((obj.RayonCycleLimite^2) - (obj.x^2) - (obj.y^2));
-            Y_dot = -obj.x + obj.y * ((obj.RayonCycleLimite^2) - (obj.x^2) - (obj.y^2));
+            X_dot = Ey + Ex * ((obj.RayonCycleLimite^2) - (Ex^2) - (Ey^2));
+            Y_dot = -Ex + Ey * ((obj.RayonCycleLimite^2) - (Ex^2) - (Ey^2));
             ThetaC = atan2(Y_dot, X_dot);
             
             X0 = [X_dot, Y_dot];
             Xc = ode23(@(t, y) EquationDiff_Tourbillon(t, y, obj.RayonCycleLimite), [0, 0.2], X0);
             ThetaC_p = atan2((Xc.y(2, 2) - Xc.y(1, 2)), (Xc.y(2, 1) - Xc.y(1, 1)));
-            
             ThetaTilde=SoustractionAnglesAtan2(ThetaC, obj.theta);
             
             %Parametres de commande
-            datas = [ThetaTilde; ThetaC_p; sign(Y_Prime)];
+            datas = [ThetaTilde; ThetaC_p; 1];
         end
         
         function CommandeReelle=control_attraction(obj, datas)
@@ -222,7 +216,6 @@ classdef vehicle < handle
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Premier type de commande
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            
             Kp = 15;
             V = Vmax;
             W = ThetaC_p + Kp*ThetaTilde;
@@ -269,6 +262,10 @@ classdef vehicle < handle
         
         function w = getW(obj)
             w = obj.w;
+        end
+
+        function d = getd(obj)
+            d = obj.d;
         end
     end
 end

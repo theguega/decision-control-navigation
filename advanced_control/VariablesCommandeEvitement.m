@@ -69,8 +69,12 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Calcul de l'orientation "ThetaC" à faire suivre par le robot pour suivre le cycle limite 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%   
-X_dot = sign(Y_Prime) * Yrelatif + Xrelatif * ((RayonCycleLimite^2) - (Xrelatif^2) - (Yrelatif^2));
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+disp(Xrelatif)
+disp(Yrelatif)
+disp(RayonCycleLimite)
+disp("----")
+X_dot = -Yrelatif + Xrelatif * ((RayonCycleLimite^2) - (Xrelatif^2) - (Yrelatif^2));
 Y_dot = -Xrelatif + Yrelatif * ((RayonCycleLimite^2) - (Xrelatif^2) - (Yrelatif^2));
 ThetaC = atan2(Y_dot, X_dot);
 

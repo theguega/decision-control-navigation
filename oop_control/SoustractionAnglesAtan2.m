@@ -21,8 +21,8 @@ if le(ThetaTilde,-pi) %Si ThetaTilde >= pi %Exprimer l'angle (compris entre -pi 
 end
 
 if (le(ThetaTilde, -pi) || gt(ThetaTilde, pi));
-    disp('ATTENTION ANGLES THETA_Tilde');
-    ThetaC
-    Theta
-    ThetaTilde
+    %disp('ATTENTION ANGLES THETA_Tilde');
+    %ThetaC
+    %Theta
+    %ThetaTilde
 end

@@ -1,7 +1,7 @@
 clear, clc, close all;
 
 targets = [20, 20];
-pos_obst = [8,10,1,2];
+pos_obst = [8,10,1,1];
 
 
 obstacles = [];
@@ -35,7 +35,7 @@ for j = 1:size(targets, 1)
         res = robot.controller_selection(obstacles, target);
         robot.update_pos(res);
         i=i+1;
-        if (~rem(i, 50)) %tous les multiple de 10
+        if (~rem(i, 10)) %tous les multiple de 10
             robot.plot();
             drawnow;
         end

@@ -44,13 +44,13 @@ G_Affichage = 1;                     %Affichage ou pas des simulations
 G_ActivationAlgorithmeOrbital = 0;   %Activation ou pas de l'algorithme orbital
 %%
 %%Conditions initiales du robot
-Xreel0 = 5;
-Yreel0 = 20;
+Xreel0 = 0;
+Yreel0 = 0;
 Theta0 = deg2rad(45);
-Rrobot = 0.8;                        %Choix pour le rayon du cercle qui entoure le robot
+Rrobot = 3;                        %Choix pour le rayon du cercle qui entoure le robot
 %%
 %%Coorodonn�es dans l'environnement du point � atteindre
-Xd = 20; Yd = 25;    %Position de la cible (phase de test de l'attraction vers la cible"
+Xd = 20; Yd = 20;    %Position de la cible (phase de test de l'attraction vers la cible"
 
 %%
 ModeleRobotUnicycle();    %Fonction qui permet de donner le mod�le (g�om�trique, cin�matique, caract�ristiques des actionneurs, etc.) du robot unicyle utilis�
@@ -75,7 +75,7 @@ PositionsObstacles = load("obstacles.txt");
 %%Instanciation des obstacles utilis�s dans la simulation
 Obstacle = CObstacle(); %Initialisation de la structure
 for i=1:size(PositionsObstacles, 1)
-    Obstacle(i) = CObstacle(PositionsObstacles(i,:), 0.8, 0.5, [0, 0]);%%Position, Rayon, Marge, [VitesseLin�aire VitesseAngulaire]
+    Obstacle(i) = CObstacle(PositionsObstacles(i,:), 1, 1, [0, 0]);%%Position, Rayon, Marge, [VitesseLin�aire VitesseAngulaire]
 end
 
 %%Affichage des diff�rents �l�ments de la simulation

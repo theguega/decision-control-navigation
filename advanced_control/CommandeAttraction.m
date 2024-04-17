@@ -32,8 +32,8 @@ if (gt(Ecart,0.2)) % Pour appliquer cette commande uniquement quand le robot n'e
     %%
     M = [cos(ThetaReel), -l1*sin(ThetaReel);
          sin(ThetaReel), l1*cos(ThetaReel)];
-    E = [Ex;Ey]
-    K = [K1;K2]
+    E = [Ex;Ey];
+    K = [K1;K2];
     Commande = K.*(inv(M)*E);
     %%
     V = Vmax; 
