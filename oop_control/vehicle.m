@@ -84,21 +84,21 @@ classdef vehicle < handle
             %reset obstacle to avoid
             obj.to_avoid = obstacle(0,0,0,0);
             obj.distance_to_avoid=-1;
+            obj.controller=1;
             
             %check if there is an obstacle to avoid
             for i=1:size(obstacles,2)
                 dist = sqrt( (obstacles(i).getX() - obj.x)^2 + (obstacles(i).getY() - obj.y)^2);
+                disp(dist)
                 if dist<=(obstacles(i).getRayonInfluence()+obj.getd())
                     obj.distance_to_avoid=dist;
                     %if the actual obstacle is neareast than the previous one
                     if dist<=obj.distance_to_avoid
+                       
                         obj.to_avoid=obstacles(i);
                         obj.distance_to_avoid=dist;
                         obj.controller=2;
                     end
-                else
-                    obj.to_avoid=obstacle(0,0,0,0);
-                    obj.controller=1;
                 end
             end
             
