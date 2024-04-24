@@ -13,6 +13,11 @@ classdef vehicle < handle
         
         %time discretisation
         dt=0.1;
+
+        %targets and obstacles
+        targets = [];
+        obstacles = [];
+        actual_target = [];
         
         %controller parameters
         to_avoid = obstacle(0,0,0,0); %obstacle to avoid
@@ -23,12 +28,14 @@ classdef vehicle < handle
     
     methods
         %constructor
-        function obj = vehicle(x, y, theta, v, w)
+        function obj = vehicle(x, y, theta, v, w, obstacles, targets)
             obj.x = x;
             obj.y = y;
             obj.theta = theta;
             obj.v = v;
             obj.w = w;
+            obj.targets = targets;
+            obj.obstacles = obstacles;
         end
         
         %plot the actual position of the vehicle
@@ -77,45 +84,40 @@ classdef vehicle < handle
             end
         end
 
-        function update(obj, obstacles, targets)
-            % Go through each target
-            for j = 1:size(targets, 1)
-                target = targets(j, :);
-                plot([obj.getX(); target(1)], [obj.getY(); target(2)], ':');
-                
-                % Move towards the target until reaching it
-                i=0;
-                while(obj.get_distance_point(target) > 1)
-                    res = obj.controller_selection(obstacles, target);
-                    obj.set_pos(res);
-                    i=i+1;
-                    if (~rem(i, 30)) %tous les multiple de 10
-                        obj.plot();
-                        drawnow;
-                    end
-                end
+        function update(obj, dt)
+            obj.dt = dt;
+            
+            obj.actual_target=obj.targets(1,:);
+
+            if obj.get_distance_point(obj.actual_target) < 1
+                obj.targets = obj.targets(2:end, :); %remove first element (already reached)
+                obj.actual_target = obj.targets(1,:);
             end
+            
+            res = obj.controller_selection();
+            obj.set_pos(res);
+
         end
         
         
         
         %choose the right controller depending on the situation and give
         %the correponding output
-        function CommandeReelle=controller_selection(obj, obstacles, target)
+        function CommandeReelle=controller_selection(obj)
             %reset obstacle to avoid
             obj.to_avoid = obstacle(0,0,0,0);
             obj.distance_to_avoid=-1;
             obj.controller=1;
             
             %check if there is an obstacle to avoid
-            for i=1:size(obstacles,2)
-                dist = sqrt( (obstacles(i).getX() - obj.x)^2 + (obstacles(i).getY() - obj.y)^2);
-                if dist<=(obstacles(i).getRayonInfluence()+obj.getd())
+            for i=1:size(obj.obstacles,2)
+                dist = sqrt( (obj.obstacles(i).getX() - obj.x)^2 + (obj.obstacles(i).getY() - obj.y)^2);
+                if dist<=(obj.obstacles(i).getRayonInfluence()+obj.getd())
                     obj.distance_to_avoid=dist;
                     %if the actual obstacle is neareast than the previous one
                     if dist<=obj.distance_to_avoid
                        
-                        obj.to_avoid=obstacles(i);
+                        obj.to_avoid=obj.obstacles(i);
                         obj.distance_to_avoid=dist;
                         obj.controller=2;
                     end
@@ -124,18 +126,18 @@ classdef vehicle < handle
             
             % get appropriates data
             if obj.controller==2
-                datas=obj.var_obstacle_avoidance(target);
+                datas=obj.var_obstacle_avoidance();
                 CommandeReelle=obj.control_obstacle_avoidance(datas);
             else
-                datas=obj.var_attraction(target);
+                datas=obj.var_attraction();
                 CommandeReelle=obj.control_attraction(datas);
             end
         end
         
-        function datas=var_attraction(obj, target)
+        function datas=var_attraction(obj)
             %compute the datas for the attraction controller
-            Ex = target(1) - obj.x;
-            Ey = target(2) - obj.y;
+            Ex = obj.actual_target(1) - obj.x;
+            Ey = obj.actual_target(2) - obj.y;
             Ecart = sqrt((Ex^2)+(Ey^2));
             
             ThetaC=atan2(Ey,Ex);
@@ -145,14 +147,14 @@ classdef vehicle < handle
             datas = [Ecart; ThetaTilde; Ex; Ey; obj.theta];
         end
         
-        function datas=var_obstacle_avoidance(obj, target)
+        function datas=var_obstacle_avoidance(obj)
             %compute the datas for the obstacle avoidance controller
             Ex = obj.x - obj.to_avoid.getX();
             Ey = obj.y - obj.to_avoid.getY();
             
             %Methode pour le changenement de repere
-            X_D_O = target(1) - obj.to_avoid.getX();
-            Y_D_O = target(2) - obj.to_avoid.getY();
+            X_D_O = obj.actual_target(1) - obj.to_avoid.getX();
+            Y_D_O = obj.actual_target(2) - obj.to_avoid.getY();
             Alpha = atan2(Y_D_O, X_D_O);
             
             %Calcul de la matrice de passage du repere obtstacle (R_O) au repere absolu (R_A)
@@ -257,8 +259,8 @@ classdef vehicle < handle
             dist=sqrt((obj.x-object.getX())^2+(obj.y-object.getY())^2);
         end
         
-        function dist=get_distance_point(obj, target)
-            dist=sqrt((obj.x-target(1))^2+(obj.y-target(2))^2);
+        function dist=get_distance_point(obj, point)
+            dist=sqrt((obj.x-point(1))^2+(obj.y-point(2))^2);
         end
         
         %getters
@@ -284,6 +286,10 @@ classdef vehicle < handle
 
         function d = getd(obj)
             d = obj.d;
+        end
+
+        function obstacles = getobstacles(obj)
+            obstacles = obj.obstacles;
         end
     end
 end

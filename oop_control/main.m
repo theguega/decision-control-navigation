@@ -21,7 +21,20 @@ for i = 1:size(targets, 1)
     plot(targets(i, 1), targets(i, 2), 'k+', 'LineWidth', 2);
 end
 
-agent = vehicle(targets(1,1), targets(1,2), 0, 0, 0);
+agent = vehicle(targets(1,1), targets(1,2), 0, 0, 0, obstacles, targets);
 
 %update vehicle
-agent.update(obstacles, targets)
+i=0;
+
+while true
+
+    dt=0.1;
+    agent.update(dt);
+
+    %just for plot
+    i=i+1;
+    if (~rem(i, 30)) %tous les multiple de 10
+        agent.plot();
+        drawnow;
+    end
+end
