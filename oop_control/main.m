@@ -1,4 +1,4 @@
-clear, clc, close all;
+ clear, clc, close all;
 
 %INIT MAPS - OBSTACLES - MAP - VEHICULE
 scenario = drivingScenario;

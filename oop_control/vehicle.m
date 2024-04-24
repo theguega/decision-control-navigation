@@ -11,13 +11,13 @@ classdef vehicle < handle
         d = 3;  % Largeur des essieux
         r = 1;     % Rayon des roues
         
+        %time discretisation
         dt=0.1;
         
+        %controller parameters
         to_avoid = obstacle(0,0,0,0); %obstacle to avoid
         distance_to_avoid=0;
-        
         RayonCycleLimite=0;
-        
         controller = 1;
     end
     
@@ -99,7 +99,8 @@ classdef vehicle < handle
         
         
         
-        %choose the right controller depending on the situation
+        %choose the right controller depending on the situation and give
+        %the correponding output
         function CommandeReelle=controller_selection(obj, obstacles, target)
             %reset obstacle to avoid
             obj.to_avoid = obstacle(0,0,0,0);
