@@ -76,6 +76,26 @@ classdef vehicle < handle
                 plot(obj.x+(obj.d/2)*cos(i),obj.y+(obj.d/2)*sin(i),'-','LineWidth',2);
             end
         end
+
+        function update(obj, obstacles, targets)
+            % Go through each target
+            for j = 1:size(targets, 1)
+                target = targets(j, :);
+                plot([obj.getX(); target(1)], [obj.getY(); target(2)], ':');
+                
+                % Move towards the target until reaching it
+                i=0;
+                while(obj.get_distance_point(target) > 1)
+                    res = obj.controller_selection(obstacles, target);
+                    obj.set_pos(res);
+                    i=i+1;
+                    if (~rem(i, 30)) %tous les multiple de 10
+                        obj.plot();
+                        drawnow;
+                    end
+                end
+            end
+        end
         
         
         
@@ -89,7 +109,6 @@ classdef vehicle < handle
             %check if there is an obstacle to avoid
             for i=1:size(obstacles,2)
                 dist = sqrt( (obstacles(i).getX() - obj.x)^2 + (obstacles(i).getY() - obj.y)^2);
-                disp(dist)
                 if dist<=(obstacles(i).getRayonInfluence()+obj.getd())
                     obj.distance_to_avoid=dist;
                     %if the actual obstacle is neareast than the previous one
@@ -169,12 +188,10 @@ classdef vehicle < handle
         function CommandeReelle=control_attraction(obj, datas)
             %Donnees = [Ecart; ThetaTilde; Ex; Ey; ThetaReel];
             Ecart = datas(1);
-            %ThetaTilde = datas(2);
             Ex = datas(3);
             Ey = datas(4);
             ThetaReel = datas(5);
             
-            %Vmax = 1; %1m/s -> 3.6km/h
             Vmax = 0.5;
             
             if (gt(Ecart,0.2)) % Pour appliquer cette commande uniquement quand le robot n'est pas tout pres de la cible
@@ -185,13 +202,13 @@ classdef vehicle < handle
                 K2 = 0.1;
                 %V1 =  K1*Ex;
                 %V2 =  K2*Ey;
-                %%
+
                 M = [cos(ThetaReel), -l1*sin(ThetaReel);
                     sin(ThetaReel), l1*cos(ThetaReel)];
                 E = [Ex;Ey];
                 K = [K1;K2];
                 Commande = K.*(inv(M)*E);
-                %%
+
                 V = Vmax;
                 W = Commande(2);
             else
@@ -225,7 +242,7 @@ classdef vehicle < handle
         end
         
         %setter
-        function update_pos(obj, CommandeReelle)
+        function set_pos(obj, CommandeReelle)
             %update the position of the vehicle
             obj.v = CommandeReelle(1);
             obj.w = CommandeReelle(2);
