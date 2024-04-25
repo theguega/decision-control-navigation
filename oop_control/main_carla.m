@@ -1,12 +1,15 @@
- clear, clc, close all;
+% To run this file, you need to have the assets/ and src/ folders from the
+% simulation repo in your MATLAB path.
+
+clear, clc, close all;
 
 %INIT MAPS - OBSTACLES - MAP - VEHICULE
 scenario = drivingScenario;
-roadNetwork(scenario,'OpenStreetMap','utac.osm');
+roadNetwork(scenario,'OpenDRIVE','scene.xodr');
 plot(scenario);
 hold on;
-xlim([-50 150]);
-ylim([-30 80]);
+xlim([-150 150]);
+ylim([-150 150]);
 
 pos_obst = load("obstacles.txt");
 num_obstacles = size(pos_obst, 1); 
@@ -16,13 +19,18 @@ for i = 1:num_obstacles
     obstacles(i).plot();
 end
 
-targets = load("target.txt");
-for i = 1:size(targets, 1)
-    plot(targets(i, 1), targets(i, 2), 'k+', 'LineWidth', 2);
+simulator = Simulator();
+
+targetRoads = [63 124 42 164];
+agent = VehicleCarla(simulator, -75.9120559692383, -46.4463195800781, 0, 0, 0, obstacles);
+for roadId = targetRoads
+    agent.addTargetRoad(roadId);
+end
+    
+for i = 1:size(agent.targets, 1)
+    plot(agent.targets(i, 1), agent.targets(i, 2), 'k+', 'LineWidth', 2);
 end
 
-simulator = Simulator();
-agent = VehicleCarla(simulator, targets(1,1), targets(1,2), 0, 0, 0, obstacles, targets);
 
 % i=0;
 
@@ -38,5 +46,5 @@ while true
     %     drawnow;
     % end
 
-    dt = toc();
+    dt = toc() * 5;
 end
