@@ -85,6 +85,7 @@ classdef vehicle < handle
         end
 
         function update(obj, dt)
+            disp(obj.v);
             obj.dt = dt;
             
             obj.actual_target=obj.targets(1,:);
@@ -207,12 +208,12 @@ classdef vehicle < handle
                 %V2 =  K2*Ey;
 
                 M = [cos(ThetaReel), -l1*sin(ThetaReel);
-                    sin(ThetaReel), l1*cos(ThetaReel)];
+                     sin(ThetaReel), l1*cos(ThetaReel)];
                 E = [Ex;Ey];
                 K = [K1;K2];
-                Commande = K.*(inv(M)*E);
+                Commande = K.*(M\E);
 
-                V = Vmax;
+                V = Commande(1);
                 W = Commande(2);
             else
                 V = 0;
@@ -227,9 +228,6 @@ classdef vehicle < handle
             %Donnees = [ThetaTilde; ThetaC_p];
             ThetaTilde = datas(1);
             ThetaC_p = datas(2);
-            
-            %Vmax = 1; %1m/s -> 3.6km/h
-            Vmax = 0.5;
             
             Vmax = 0.5;
             
