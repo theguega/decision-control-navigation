@@ -88,8 +88,6 @@ classdef vehicle < handle
             %check if there is an obstacle to avoid
             for i=1:size(obj.obstacles,2)
                 dist = sqrt( (obj.obstacles(i).getX() - obj.x)^2 + (obj.obstacles(i).getY() - obj.y)^2);
-                disp(dist)
-                disp(obj.obstacles(i).getRayonInfluence()+obj.getd())
                 if dist<=(obj.obstacles(i).getRayonInfluence()+obj.getd())
                     obj.distance_to_avoid=dist;
                     %if the actual obstacle is neareast than the previous one
@@ -147,10 +145,10 @@ classdef vehicle < handle
             X_D_O = obj.actual_target(1) - obj.to_avoid.getX();
             Y_D_O = obj.actual_target(2) - obj.to_avoid.getY();
             alpha = atan2(Y_D_O, X_D_O);
-            T_O_A = inv([cos(alpha) -sin(alpha) 0 obj.to_avoid.getX()
-                         sin(alpha)  cos(alpha) 0 obj.to_avoid.getY()
-                         0           0          1 0
-                         0           0          0 1]);
+            T_O_A = [cos(alpha) -sin(alpha) 0 obj.to_avoid.getX()
+                     sin(alpha)  cos(alpha) 0 obj.to_avoid.getY()
+                     0           0          1 0
+                     0           0          0 1];
             
             obstacle_coords = T_O_A\[obj.x; obj.y; 0; 1];
             X_obst = obstacle_coords(1);
