@@ -39,3 +39,9 @@ while true
         drawnow;
     end
 end
+
+error=agent.getspeederror;
+figure(2);
+plot(error(:,1),'red')
+hold on;
+plot(error(:,2),'blue')

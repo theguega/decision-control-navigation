@@ -27,6 +27,10 @@ classdef vehicle < handle
         distance_to_avoid=-1; % distance between nearest obstacle and the vehicle
         v_error_prev = 0; %velocity error for PID controller
         v_integral = 0;
+
+        %arrays for visualisation
+        theta_error_output=[];
+        speed_error_output=[];
     end
     
     methods
@@ -152,11 +156,7 @@ classdef vehicle < handle
             
             %----- control linear speed -----
             target_speed=obj.actual_target(3);
-            disp("----")
-            disp(["v" "target"])
-            disp([obj.v target_speed])
-            %V = command(1); % with this command, linear speed is proportionnal to error : big error = faster
-            %V = target_speed; %with this command, linear speed is fixed
+            obj.speed_error_output = [obj.speed_error_output;[obj.v target_speed]];
             v_error = target_speed - obj.v;
             obj.v_integral = obj.v_integral + v_error * obj.dt;
             v_derivative = (v_error - obj.v_error_prev) / obj.dt;
@@ -206,15 +206,27 @@ classdef vehicle < handle
         end
         
         
-        function control=control_obstacle_avoidance(~, datas)
+        function control=control_obstacle_avoidance(obj, datas)
             error_theta = datas(1);
             theta_controller = datas(2);
+
+            % PID controller parameters
+            kp_v = 1;
+            ki_v = 0.1;
+            kd_v = 0.01;
             
             Kp = 15;
-            V = 5;
-            V = V/3.6; %conversion from km/h to m/s
-            %insert PID here instead of V = ...
             W = theta_controller + Kp*error_theta;
+            
+            %----- control linear speed -----
+            target_speed=5/3.6; %fixed to 5km/h in obstacle avoidance mode
+            obj.speed_error_output = [obj.speed_error_output;[obj.v target_speed]];
+            v_error = target_speed - obj.v;
+            obj.v_integral = obj.v_integral + v_error * obj.dt;
+            v_derivative = (v_error - obj.v_error_prev) / obj.dt;
+            v_control = kp_v * v_error + ki_v * obj.v_integral + kd_v * v_derivative;
+            V = obj.v + v_control * obj.dt;
+
             
             lyapunov = 0.5*rad2deg(error_theta)^2/10;
             control = [V, W, lyapunov];
@@ -268,6 +280,10 @@ classdef vehicle < handle
         
         function obstacles = getobstacles(obj)
             obstacles = obj.obstacles;
+        end
+
+        function error = getspeederror(obj)
+            error=obj.speed_error_output;
         end
     end
 end
