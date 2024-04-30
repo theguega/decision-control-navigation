@@ -14,25 +14,37 @@ classdef vehicle < handle
         r = 1;     % Rayon des roues
         
         %targets and obstacles
-        targets = [];
-        obstacles = [];
+        targets = []; %(x,y,speed_target)
+        obstacles = []; %obstacle object
         actual_target;
         
         %controllers parameters
-        to_avoid = obstacle(0,0,0,0); %obstacle to avoid
-        distance_to_avoid=0; % distance between nearest obstacle and the vehicle
         RayonCycleLimite=0;
         controller = 1;
+
+        %controllers memory
+        to_avoid = obstacle(0,0,0,0); %obstacle to avoid
+        distance_to_avoid=-1; % distance between nearest obstacle and the vehicle
+        v_error_prev = 0; %velocity error for PID controller
+        v_integral = 0;
     end
     
     methods
         %constructor
         function obj = vehicle(x, y, theta, obstacles, targets)
-            obj.x = x;
-            obj.y = y;
-            obj.theta = theta;
-            obj.targets = targets;
-            obj.obstacles = obstacles;
+            if nargin == 5
+                obj.x = x;
+                obj.y = y;
+                obj.theta = theta;
+                obj.obstacles = obstacles;
+
+                %treatment of targets : calculate target speed based on
+                %waypoint navigation method + delete waypoints that are on
+                %static targets
+                obj.targets = targets;
+            else
+                 error('Incorrect number of arguments for vehicle constructor');
+            end
         end
         
         %plot the vehicle pos
@@ -64,15 +76,21 @@ classdef vehicle < handle
         
         function update(obj, dt)
             obj.dt = dt;
-            obj.actual_target=obj.targets(1,:); %first by default
             
-            if obj.get_distance_point(obj.actual_target) < 1
-                obj.targets = obj.targets(2:end, :); %remove first target of the list if already reached
-                obj.actual_target = obj.targets(1,:);
+            % check if the point is already reached
+            reached=[];
+            for i=1:size(obj.targets,1)
+                if obj.get_distance_point(obj.targets(i,:)) < max(obj.d, obj.v*obj.dt)
+                    reached=[reached i];
+                end
             end
+            obj.targets(reached,:)=[]; % remove reached elements
             
-            control = obj.controller_selection(); %return controller command
-            obj.set_pos(control);
+            if ~isempty(obj.targets)
+                obj.actual_target=obj.targets(1,:); % first to reach
+                control = obj.controller_selection(); % return controller command
+                obj.set_pos(control);
+            end
         end
         
         
@@ -118,6 +136,11 @@ classdef vehicle < handle
         end
         
         function control=control_attraction(obj, datas)
+            % PID controller parameters
+            kp_v = 1;
+            ki_v = 0.1;
+            kd_v = 0.01;
+
             E = [datas(1);datas(2)];
             l1 = 0.4;
             K = [0.1;0.1];
@@ -125,10 +148,20 @@ classdef vehicle < handle
                  sin(obj.theta), l1*cos(obj.theta)];
             
             command = K.*(M\E);
-            
-            V = command(1); % with this command, linear speed is proportionnal to error : big error = faster
-            %insert PID here instead of V=command(1)
             W = command(2);
+            
+            %----- control linear speed -----
+            target_speed=obj.actual_target(3);
+            disp("----")
+            disp(["v" "target"])
+            disp([obj.v target_speed])
+            %V = command(1); % with this command, linear speed is proportionnal to error : big error = faster
+            %V = target_speed; %with this command, linear speed is fixed
+            v_error = target_speed - obj.v;
+            obj.v_integral = obj.v_integral + v_error * obj.dt;
+            v_derivative = (v_error - obj.v_error_prev) / obj.dt;
+            v_control = kp_v * v_error + ki_v * obj.v_integral + kd_v * v_derivative;
+            V = obj.v + v_control * obj.dt;
             
             lyapunov = 0.5*(datas(1)^2+datas(2)^2);
             control = [V, W, lyapunov];
@@ -178,8 +211,9 @@ classdef vehicle < handle
             theta_controller = datas(2);
             
             Kp = 15;
-            V = 0.5;
-            %insert PID here instead of V=0.5
+            V = 5;
+            V = V/3.6; %conversion from km/h to m/s
+            %insert PID here instead of V = ...
             W = theta_controller + Kp*error_theta;
             
             lyapunov = 0.5*rad2deg(error_theta)^2/10;
@@ -191,7 +225,7 @@ classdef vehicle < handle
             %update the position of the vehicle
             obj.v = control(1);
             obj.w = control(2);
-            
+
             obj.x = obj.x + obj.v * cos(obj.theta) * obj.dt;
             obj.y = obj.y + obj.v * sin(obj.theta) * obj.dt;
             obj.theta = obj.theta + obj.w * obj.dt;
