@@ -1,20 +1,8 @@
 The documentation website can be found here :  https://utonome.gitlab.utc.fr/documentation/
 
-To run simple_control :
-
-> open simple_control directory  
-> run main.m
-
-To run advanced_control :
-
-> open advanced_control directory  
-> run ProgrammePrincipal.m
-
-Next step :
-
-> conversion of advanced_control in OOP
-> and new controls (line avoidance, new obstacles...)
+Actual version can be found and executed at the following path :  
+- src/main.m  
 
 **Objectives :**  
-- Integrate advanced control in oriented object simulation
-- Control the speed of the vehicle
+- Add a waypoint class with a coordinate system associated with every waypoints  
+- Upgrade actual controller for better anticipation  
