@@ -26,9 +26,8 @@ for roadId = targetRoads
     agent.addTargetRoad(roadId);
 end
 
-
 %---------------------------- UPDATE VEHICLE POS ----------------------------
-dt=0.05; % fixed sample time
+dt=0.0075; % fixed sample time
 while true
     if isempty(agent.targets)
         break;
