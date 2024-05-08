@@ -8,7 +8,7 @@ hold on;
 xlim([-50 150]);
 ylim([-30 80]);
 
-pos_obst = load("data/obstacles.txt"); %obstacles = [x, y, marge]
+pos_obst = load("data/obstacles.txt"); %obstacles
 num_obstacles = size(pos_obst, 1);
 obstacles = repmat(obstacle(0,0,0,0), 1, num_obstacles);
 for i = 1:num_obstacles
@@ -16,21 +16,12 @@ for i = 1:num_obstacles
     obstacles(i).plot();
 end
 
-pos_targets = load("data/target.txt"); % targets = [x, y]
-num_targets = size(pos_targets, 1);
-targets = repmat(target(0,0,0,0), 1, num_targets);
-for i = 1:num_targets
-    if i == num_targets
-        theta_target= 0;
-    else
-        theta_target = atan2(pos_targets(i+1,2)-pos_targets(i,2), pos_targets(i+1,1)-pos_targets(i,1));
-    end
-    target_speed =  3; %future : calculate speed based on angle
-    targets(i) = target(pos_targets(i, 1), pos_targets(i, 2), target_speed, theta_target);
-    targets(i).plot();
+targets = load("data/target.txt"); % targets
+for i = 1:size(targets, 1)
+    plot(targets(i, 1), targets(i, 2), 'k+', 'LineWidth', 2);
 end
 
-agent = vehicle(targets(1,1).getX, targets(1,1).getY, 0, 0, obstacles, targets); % vehicle
+agent = vehicle(targets(1,1), targets(1,2), 0, obstacles, targets); % vehicle
 
 %---------------------------- UPDATE VEHICLE POS ----------------------------
 i=0;
@@ -43,8 +34,14 @@ while true
     agent.update(dt);
     
     i=i+1;
-    if (~rem(i, 10)) %every 30 iterations
+    if (~rem(i, 15)) %every 30 iterations
         agent.plot();
         drawnow;
     end
 end
+
+error=agent.getspeederror;
+figure(2);
+plot(error(:,1),'red')
+hold on;
+plot(error(:,2),'blue')
