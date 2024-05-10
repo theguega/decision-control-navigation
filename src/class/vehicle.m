@@ -194,6 +194,8 @@ classdef vehicle < handle
 
             gamma_controller = atan(obj.lbase*curv);
 
+            obj.theta_error_output = [obj.theta_error_output;[obj.theta obj.actual_target.getTheta]];
+
             % PID controller parameters
             kp_v = 1;
             ki_v = 0.1;
@@ -340,6 +342,10 @@ classdef vehicle < handle
 
         function error = getspeederror(obj)
             error=obj.speed_error_output;
+        end
+
+        function error = getthetaerror(obj)
+            error=obj.theta_error_output;
         end
     end
 end

@@ -1,12 +1,10 @@
 clear, clc, close all;
 
 %---------------------------- INIT MAPS - OBSTACLES - MAP - VEHICULE ----------------------------
-scenario = drivingScenario; %map
-roadNetwork(scenario,'OpenStreetMap','data/utac.osm');
-plot(scenario);
+%scenario = drivingScenario; %map
+%roadNetwork(scenario,'OpenStreetMap','data/utac.osm');
+%plot(scenario);
 hold on;
-xlim([-50 150]);
-ylim([-30 80]);
 
 pos_obst = load("data/obstacles.txt"); %obstacles = [x, y, marge]
 num_obstacles = size(pos_obst, 1);
@@ -16,7 +14,7 @@ for i = 1:num_obstacles
     obstacles(i).plot();
 end
 
-pos_targets = load("data/target.txt"); % targets = [x, y]
+pos_targets = load("data/control.txt"); % targets = [x, y]
 num_targets = size(pos_targets, 1);
 targets = repmat(target(0,0,0,0), 1, num_targets);
 for i = 1:num_targets
@@ -39,7 +37,7 @@ while true
     if isempty(agent.targets)
         break;
     end
-
+    
     agent.update(dt);
     
     i=i+1;
@@ -48,3 +46,15 @@ while true
         drawnow;
     end
 end
+
+error1=agent.getspeederror;
+figure(2);
+plot(error1(:,1),'red')
+hold on;
+plot(error1(:,2),'blue')
+
+error2=agent.getthetaerror;
+figure(3);
+plot(error2(:,1),'red')
+hold on;
+plot(error2(:,2),'blue')
