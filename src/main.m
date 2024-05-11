@@ -16,19 +16,18 @@ end
 
 pos_targets = load("data/control.txt"); % targets = [x, y]
 num_targets = size(pos_targets, 1);
-targets = repmat(target(0,0,0,0), 1, num_targets);
+targets = repmat(target(0,0,0,0,0), 1, num_targets);
 for i = 1:num_targets
     if i == num_targets
         theta_target= 0;
     else
         theta_target = atan2(pos_targets(i+1,2)-pos_targets(i,2), pos_targets(i+1,1)-pos_targets(i,1));
     end
-    target_speed =  3; %future : calculate speed based on angle
-    targets(i) = target(pos_targets(i, 1), pos_targets(i, 2), target_speed, theta_target);
+    targets(i) = target(pos_targets(i, 1), pos_targets(i, 2), theta_target, 0, 0);
     targets(i).plot();
 end
 
-agent = vehicle(targets(1,1).getX, targets(1,1).getY, 0, 0, obstacles, targets); % vehicle
+agent = vehicle(targets(1).x, targets(1).y, 0, 0, obstacles, targets); % vehicle
 
 %---------------------------- UPDATE VEHICLE POS ----------------------------
 i=0;
@@ -39,6 +38,8 @@ while true
     end
     
     agent.update(dt);
+    targets(2).update(dt)
+    targets(2).plot
     
     i=i+1;
     if (~rem(i, 10)) %every 30 iterations
@@ -47,14 +48,12 @@ while true
     end
 end
 
-error1=agent.getspeederror;
+error1=agent.theta_error_output;
 figure(2);
 plot(error1(:,1),'red')
 hold on;
 plot(error1(:,2),'blue')
 
-error2=agent.getthetaerror;
+error2=agent.speed_output;
 figure(3);
 plot(error2(:,1),'red')
-hold on;
-plot(error2(:,2),'blue')

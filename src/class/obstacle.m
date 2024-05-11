@@ -31,15 +31,6 @@ classdef obstacle < handle
             plot(xsecu,ysecu,'k:','Color','b','LineWidth',2)
         end
         
-        %------------------ getters ------------------
-        function x = getX(obj)
-            x = obj.x;
-        end
-        
-        function y = getY(obj)
-            y = obj.y;
-        end
-        
         function r = getRayonInfluence(obj)
             r = obj.r + obj.marge;
         end
