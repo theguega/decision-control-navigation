@@ -17,9 +17,7 @@ classdef VehicleCarla < vehicle
             this.CarlaVehicle.setHeading(this.theta);
         end
         function addTargetRoad(this, roadId)
-            roadTuple = this.Simulator.MapParse.waypoint_tuple_list(roadId);
-            roadStart = roadTuple{1}{1};
-            roadList = roadStart.next_until_lane_end(2);
+            roadList = this.Simulator.MapDetail.Map(string(roadId)).waypoints;
 
             for i = 1:length(roadList)-1
                 road = roadList{i};
