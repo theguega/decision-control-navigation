@@ -14,14 +14,13 @@ classdef vehicle < handle
         %handler
         targets = []; %target objects
         obstacles = []; %obstacle objects
-        %vehicles = []; %vehicle objects
+        vehicles = []; %vehicle objects
 
         %controllers memory
         actual_target;
         obstacle_to_avoid;
         vehicle_to_follow;
         limitcycles=0;
-        mode=1;
 
         %arrays for correction action visualisation
         theta_error_output=[];
@@ -35,13 +34,15 @@ classdef vehicle < handle
     
     methods
         %constructor
-        function obj = vehicle(x, y, theta, gamma, obstacles, targets)
-            if nargin == 6
+        function obj = vehicle(x, y, theta, gamma, obstacles, targets, vehicles, id)
+            if nargin == 8
                 obj.x = x;
                 obj.y = y;
                 obj.theta = theta;
                 obj.gamma = gamma;
                 obj.obstacles = obstacles;
+                obj.vehicles = vehicles;
+                obj.id = id;
 
                 %% filtrer targets and remove targets that are above obstacles
                 % for loop on every targets / obstacles
@@ -93,7 +94,7 @@ classdef vehicle < handle
 
             obj.target_selection() %update obj.actual_target
             control = obj.control_law(); % return controller command
-            obj.set_pos(control) % updtae vehicle law
+            obj.set_pos(control) % update vehicle law
         end
         
         function target_selection(obj)
@@ -108,8 +109,7 @@ classdef vehicle < handle
 
             %reset obstacle to avoid and vehicle to follow
             obj.obstacle_to_avoid = obstacle(0,0,0,0);
-            obj.vehicle_to_follow = vehicle(0,0,0,0,[],[]);
-            obj.mode=1;
+            obj.vehicle_to_follow = vehicle(0,0,0,0,[],[],[],0);
 
             % ------ Remove reached targets ---------
             tar = [obj.targets(1).theta, obj.targets(1).x, obj.targets(1).y];
@@ -136,34 +136,34 @@ classdef vehicle < handle
             
             
 
-
-            % ------ Check if the is an obstacle to avoid ---------
+            % ------ Check if there is an obstacle to avoid ---------
             minimal_distance=-1;
             for i=1:size(obj.obstacles,2)
                 dist = obj.get_distance_object(obj.obstacles(i));
                 if ( dist<=(obj.obstacles(i).getRayonInfluence()) && dist<= minimal_distance )
                     minimal_distance = dist;
                     obj.obstacle_to_avoid = obj.obstacles(i);
-                    obj.mode = 2;
+
+                    %obj.actual_target = obj.compute_limited_cycles
                 end
             end
-
-
-
-
-            % ------ Check if the is a vehicle to follow ---------
-            %if vehicle : obj.actual_target=vehicle_offset
-            %obj.mode=3
             
-            if obj.mode == 2
-                disp("obstacle to avoid")
-                %moving target = cycle limit of obstacle_to_avoid
-            elseif obj.mode == 3
-                % moving target = offset of vehicle_to_follow
+
+
+            % ------ Check if there is a vehicle to follow ---------
+            for i=1:size(obj.vehicles,2)
+                dist=obj.get_distance_object(obj.vehicles(i));
+                diff_ang=abs(obj.theta-obj.vehicles(i).theta);
+                if (dist <= 30 && diff_ang <= 0.7)
+                    obj.actual_target = obj.compute_vehicle_offset(obj.vehicles(i));
+                end
             end
         end
         
         function control=control_law(obj)
+            disp("-----")
+            disp(obj.id)
+            disp(obj.actual_target)
             vmax=50/3.6; % 50km/h
 
             curvature_t=obj.actual_target.getCurv;
@@ -224,10 +224,26 @@ classdef vehicle < handle
             
             control = [V , gamma_controller];
         end
+
+
+        function offset=compute_vehicle_offset(obj, vehicle)
+            error_y = vehicle.y-obj.y;
+            error_x = vehicle.x-obj.x;
+            phi = atan2(error_y, error_x);
+
+            x_offset = vehicle.x-cos(phi)*5;
+            y_offset = vehicle.y-sin(phi)*5;
+
+            offset = target(x_offset, y_offset, vehicle.theta, vehicle.v, 0);
+        end
         
         
         
-        function datas=var_obstacle_avoidance(obj)
+        function avoiding_target=compute_limited_cycles(obj, obstacle)
+            %% FOR RUBEN : 
+
+            %% Edit this function
+
             %compute the datas for the obstacle avoidance controller
             error_x = obj.x - obj.obstacle_to_avoid.x;
             error_y = obj.y - obj.obstacle_to_avoid.y;
@@ -260,7 +276,7 @@ classdef vehicle < handle
             theta_controller = atan2((xc.y(2, 2) - xc.y(1, 2)), (xc.y(2, 1) - xc.y(1, 1)));
             error_theta=SoustractionAnglesAtan2(theta_dot, obj.theta);
             
-            datas = [error_theta; theta_controller];
+            avoiding_target = [error_theta; theta_controller];
         end
         
         
