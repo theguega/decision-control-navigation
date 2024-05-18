@@ -4,17 +4,22 @@ classdef VehicleCarla < vehicle
         Simulator
     end
     methods
-        function this = VehicleCarla(simulator, x, y, theta, obstacles)
-            this@vehicle(x, y, theta, 0, obstacles, repmat(target(0,0,0,0,0), 0, 0));
+        function this = VehicleCarla(simulator, obstacles)
+            this@vehicle(0, 0, 0, 0, obstacles, repmat(target(0,0,0,0,0), 0, 0));
             this.CarlaVehicle = Vehicle(simulator);
-            this.CarlaVehicle.setPos(x, y);
-            this.CarlaVehicle.setHeading(theta);
             this.Simulator = simulator;
+        end
+        function teleportToFirstTarget(this)
+            % Call this after adding targets to the vehicle to sync the
+            % "decision" vehicle and the CARLA vehicle's position and angle
+            this.x = this.targets(1).x;
+            this.y = this.targets(1).y;
+            this.theta = this.targets(1).theta;
+            this.CarlaVehicle.setPosAndHeading(this.x, this.y, this.theta);
         end
         function update(this, dt)
             update@vehicle(this, dt);
-            this.CarlaVehicle.setPos(this.x, this.y);
-            this.CarlaVehicle.setHeading(this.theta);
+            this.CarlaVehicle.setPosAndHeading(this.x, this.y, this.theta);
         end
         function addTargetRoad(this, roadId)
             roadList = this.Simulator.MapDetail.Map(string(roadId)).waypoints;
