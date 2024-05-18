@@ -5,7 +5,7 @@ classdef VehicleCarla < vehicle
     end
     methods
         function this = VehicleCarla(simulator, obstacles)
-            this@vehicle(0, 0, 0, 0, obstacles, repmat(target(0,0,0,0,0), 0, 0));
+            this@vehicle(0, 0, 0, 0, obstacles, repmat(target(0,0,0,0,0), 0, 0), [], 0);
             this.CarlaVehicle = Vehicle(simulator);
             this.Simulator = simulator;
         end
