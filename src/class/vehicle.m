@@ -1,12 +1,14 @@
 classdef vehicle < handle
     properties
+
+        %Parametres Control
         x = 0;
         y = 0;
         theta = 0;
         gamma = 0; %angle of the front wheel
         v = 0; %linear speed
 
-        id = 0; 
+        id_vehicle = 0; 
         lbase = 3; %distance between front and back wheels
         
         dt = 0.1; % default discretisation time
@@ -19,7 +21,7 @@ classdef vehicle < handle
         %controllers memory
         actual_target;
         obstacle_to_avoid;
-        vehicle_to_follow;
+        %vehicle_to_follow;
         limitcycles=0;
 
         %arrays for correction action visualisation
@@ -30,28 +32,47 @@ classdef vehicle < handle
         L = 2.5;     % Empattement
         l = 3;  % Largeur des essieux
         r = 1;     % Rayon des roues
+
+        %Parametres Ordonancement
+        id_road;
+        dist_from_start;
+        nbpassengers;
+        plannedDemands;
+        actualPath;
+        priority;
+
+
     end
     
     methods
         %constructor
-        function obj = vehicle(x, y, theta, gamma, obstacles, targets, vehicles, id)
-            if nargin == 8
+        function obj = vehicle(x, y, theta, gamma, obstacles, targets, vehicles, id_vehicle,id_road,dist_from_start)
+            
+            if nargin == 10
+                %Control
                 obj.x = x;
                 obj.y = y;
                 obj.theta = theta;
                 obj.gamma = gamma;
                 obj.obstacles = obstacles;
                 obj.vehicles = vehicles;
-                obj.id = id;
 
                 %% filtrer targets and remove targets that are above obstacles
                 % for loop on every targets / obstacles
-
                 obj.targets = targets;
+                
+                %Ordonancement
+                obj.id_vehicle = id_vehicle;
+                obj.id_road = id_road;
+                obj.dist_from_start = dist_from_start;
+                obj.nbpassengers = 0;
+                obj.plannedDemands = [];
+                obj.actualPath = NaN;
+                obj.priority = NaN;
             else
                  error('Incorrect number of arguments for vehicle constructor');
             end
-        end
+         end
         
         %plot the vehicle pos - debug mode
         function plot(obj)
@@ -109,7 +130,7 @@ classdef vehicle < handle
 
             %reset obstacle to avoid and vehicle to follow
             obj.obstacle_to_avoid = obstacle(0,0,0,0);
-            obj.vehicle_to_follow = vehicle(0,0,0,0,[],[],[],0);
+            %obj.vehicle_to_follow = vehicle(0,0,0,0,[],[],[],0);
 
             % ------ Remove reached targets ---------
             tar = [obj.targets(1).theta, obj.targets(1).x, obj.targets(1).y];
@@ -161,9 +182,6 @@ classdef vehicle < handle
         end
         
         function control=control_law(obj)
-            disp("-----")
-            disp(obj.id)
-            disp(obj.actual_target)
             vmax=50/3.6; % 50km/h
 
             curvature_t=obj.actual_target.getCurv;
@@ -293,6 +311,157 @@ classdef vehicle < handle
         
         function dist=get_distance_object(obj, object)
             dist=sqrt((obj.x-object.x)^2+(obj.y-object.y)^2);
+        end
+
+        %Ordonancement
+        function obj = addDemand(obj,demand)
+            obj.plannedDemands = [obj.plannedDemands;demand];
+        end
+
+
+        function obj = addPassenger(obj,nb)
+            obj.nbpassengers = obj.nbpassengers + nb;
+        end
+
+        function obj = updatePosition(obj,id_road,x,y,dist_from_start,schedul)
+            obj.id_road = id_road;
+            obj.x = x;
+            obj.y = y;
+            obj.dist_from_start = dist_from_start;
+            
+            % gestion des demandes en cours
+            for i = 1:size(obj.plannedDemands,1)
+                
+
+                % vérification du fait que l'on soit au point de départ
+                % d'une demande
+                pos = get_pos_by_id(schedul.modified_nav,obj.plannedDemands(i).id_dep);
+                if obj.plannedDemands(i).visited_dep == false && ...
+                    (schedul.modified_nav.States.StateVector(pos,1)-2<x && x<schedul.modified_nav.States.StateVector(pos,1)+2) && ...
+                    (schedul.modified_nav.States.StateVector(pos,2)-2<y && y<schedul.modified_nav.States.StateVector(pos,2)+2)
+                
+                    obj.plannedDemands(i).visited_dep = True;
+                end
+
+                % vérification si on est au point d'arrivée d'une demande
+                % et supression de la demande si on y est
+                pos = get_pos_by_id(schedul.modified_nav,obj.plannedDemands(i).id_dep);
+                if (schedul.modified_nav.States.StateVector(pos,1)-2<x && x<schedul.modified_nav.States.StateVector(pos,1)+2) && ...
+                    (schedul.modified_nav.States.StateVector(pos,2)-2<y && y<schedul.modified_nav.States.StateVector(pos,2)+2) && ...
+                    (obj.plannedDemands(i).visited_dep == True)
+                    obj.addPassenger(obj.plannedDemands(i).nbpassengers *(-1));
+                    obj.plannedDemands = [obj.plannedDemands(1:i-1);obj.plannedDemands(i+1:end)];
+                    obj.updatePriority();
+                    
+                end
+                    
+            end
+            
+        end
+
+        function obj = updatePriority(obj)
+            obj.priority = -1;
+            for i = 1:size(obj.plannedDemands,1)
+                if obj.plannedDemands(i).priority > obj.priority
+                    obj.priority = obj.plannedDemands(i).priority;
+                end
+            end
+            if obj.priority == -1
+                obj.priority = NaN;
+            end
+        end
+        
+        function [id] = getIdVehicle(obj)
+            id = obj.id_vehicle;
+        end
+        function [id_road]=getRoad(obj)
+            id_road = obj.id_road;
+        end
+        function [X]=getX(obj)
+            X = obj.x;
+        end
+        function [Y]=getY(obj)
+            Y = obj.y;
+        end
+        function [dist]=getDistFromStart(obj)
+            dist = obj.dist_from_start;
+        end
+        function obj = assignateNewPath(obj,path)
+            obj.actualPath = path;
+        end 
+        function [dist] = getTotalCost(obj,demands,NavG)
+            % calcul des coûts de tous les trajets possible entre la
+            % position d'un véhicule et toutes les demandes
+            if isempty(demands)
+                error("Demands tab is empty");
+            end
+
+            pos = find(NavG.Links.Id_route == obj.id_road);
+
+            id_dep = NavG.Links.EndStates(pos,2);
+            
+            combs = getCombs(id_dep,demands);
+            dual_combs = getdualcombs(combs);
+            tmp1 = [];
+            tmp2 = [];
+            for i = 1:size(dual_combs,1)
+                [pathOutput,solutionInfo] = GetPath(NavG,get_pos_by_id(NavG,dual_combs(i,1)),get_pos_by_id(NavG,dual_combs(i,2))); 
+                tmp1 = [tmp1; Path(pathOutput, solutionInfo.PathCost, NavG, obj.id_vehicle)];
+                tmp2 = [tmp2;solutionInfo.PathCost];
+            end
+            dual_dist = table(dual_combs, tmp1, tmp2,VariableNames=["dual_combs","Path","Path_Cost"]);
+            total_cost=[];
+            total_path = [];
+            for i = 1:size(combs,1) 
+                comb = combs(i,:);
+                c = [comb(1:length(comb)-1); comb(2:length(comb))]';
+                cost = [];
+                path = [];
+                for j = 1:size(c,1)
+                    pair = find(ismember(dual_dist{:, {'dual_combs'}}, [c(j,1), c(j,2)] , 'rows'));
+                    cost = [cost;dual_dist(pair,3)];
+                    path = [path;dual_dist(pair,2)];
+                end
+                total_cost = [total_cost;sum(cost)]; 
+                total_path = [total_path;assoicatePaths(path,table2array(total_cost),NavG,obj.id_vehicle)];
+            end
+            dist = table(combs,total_path,total_cost,VariableNames=["Combinaisons","Chemin","Cout_total"]);
+        end
+
+        function [res] = getOptimalPath(obj,demands,NavG)
+            % Retourne une table contenant le chemin optimal dans lequel a été ajouté le
+            % nouveau trajet sous la forme suivante (combinaison des points de passages,
+            % Chemin sous forme de Path, cout total)
+            if isempty(demands)
+                error("Demands tab isf empty");
+            end
+            
+            dist = obj.getTotalCost(demands,NavG);
+            [~, id_min] = min(dist.Cout_total); 
+            min_row = dist(table2array(id_min), :);
+            comb = min_row{1, 'Combinaisons'}; 
+            optimal_path = min_row{1, 'Chemin'}; 
+            cost_total = table2array(min_row{1, 'Cout_total'}); 
+            res = table(comb, optimal_path, cost_total, 'VariableNames', {'Combinaisons', 'Chemin', 'Cout_total'});
+        end
+
+        function showCarPath(obj,NavG)
+            h = show(NavG);
+            set(h,XData=NavG.States.StateVector(:,1), ...
+                YData=NavG.States.StateVector(:,2));
+            pathStateIDs = [];
+            if ~isnan(obj.actualPath)
+                for i = 1:size(obj.actualPath.points,1)
+                    pathStateIDs = [pathStateIDs;get_pos_by_id(NavG,recherche_dans_nodes(obj.actualPath.points(i,1),obj.actualPath.points(i,2),NavG))];
+                end
+            else
+                pos = find(NavG.Links.Id_route == obj.id_road);
+                id_dep = NavG.Links.EndStates(pos,2);
+                pathStateIDs = [get_pos_by_id(NavG,id_dep)];
+            end
+            highlight(h,pathStateIDs,EdgeColor="#EDB120",LineWidth=4);
+            highlight(h,pathStateIDs(1),NodeColor="#77AC30",MarkerSize=5);
+            highlight(h,pathStateIDs(end),NodeColor="#D95319",MarkerSize=5);
         end
     end
 end

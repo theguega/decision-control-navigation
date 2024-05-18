@@ -4,10 +4,17 @@ classdef VehicleCarla < vehicle
         Simulator
     end
     methods
-        function this = VehicleCarla(simulator, obstacles)
-            this@vehicle(0, 0, 0, 0, obstacles, repmat(target(0,0,0,0,0), 0, 0), [], 0);
+        function this = VehicleCarla(simulator, obstacles, id_vehicle,id_road)
+            disp(id_road);
+            point0 = simulator.MapDetail.Map(string(id_road)).waypoints{1};
+            point1 = simulator.MapDetail.Map(string(id_road)).waypoints{2};
+            pos0= point0.transform.location;
+            pos1= point1.transform.location;
+            theta = atan2(-pos1.y + pos0.y, pos1.x - pos0.x);
+            this@vehicle(pos0.x, pos0.y, theta, 0, obstacles, repmat(target(0,0,0,0,0), 0, 0), [], id_vehicle, id_road, 0);
             this.CarlaVehicle = Vehicle(simulator);
             this.Simulator = simulator;
+            this.CarlaVehicle.setPosAndHeading(this.x, -this.y, this.theta);
         end
         function teleportToFirstTarget(this)
             % Call this after adding targets to the vehicle to sync the
@@ -18,8 +25,16 @@ classdef VehicleCarla < vehicle
             this.CarlaVehicle.setPosAndHeading(this.x, this.y, this.theta);
         end
         function update(this, dt)
-            update@vehicle(this, dt);
-            this.CarlaVehicle.setPosAndHeading(this.x, this.y, this.theta);
+            if length(this.targets)<=2
+                if ~isempty(this.actualPath.roads)
+                    this.id_road=this.actualPath.roads(1);
+                    this.actualPath.roads= this.actualPath.roads(2:end);
+                    this.addTargetRoad(this.id_road);
+                end
+            else
+                update@vehicle(this, dt);
+                this.CarlaVehicle.setPosAndHeading(this.x, this.y, this.theta);
+            end
         end
         function addTargetRoad(this, roadId)
             roadList = this.Simulator.MapDetail.Map(string(roadId)).waypoints;
