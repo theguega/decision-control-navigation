@@ -35,8 +35,8 @@ targets2 = [target(0, 0, 0, 0, 0), target(200, 0, 0, 0, 0)];
 targets1(1).plot()
 targets1(2).plot()
 
-agent = vehicle(targets1(1).x, targets1(1).y, 0, 0, obstacles, targets1, [],1);
-agent2 = vehicle(targets2(1).x, targets2(1).y, 0, 0, obstacles, targets2, agent,2); % vehicle
+agent = vehicle(targets1(1).x, targets1(1).y, 0, 0, obstacles, targets1, [],1, 0, 0);
+agent2 = vehicle(targets2(1).x, targets2(1).y, 0, 0, obstacles, targets2, agent,2, 0 ,0); % vehicle
 
 %---------------------------- UPDATE VEHICLE POS ----------------------------
 i=0;

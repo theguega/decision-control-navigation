@@ -46,8 +46,8 @@ classdef vehicle < handle
     
     methods
         %constructor
-        function obj = vehicle(x, y, theta, gamma, obstacles, targets, vehicles, id_vehicle,id_road,dist_from_start)
-            
+        function obj = vehicle(x, y, theta, gamma, obstacles, targets, vehicles, id_vehicle, id_road, dist_from_start)
+             
             if nargin == 10
                 %Control
                 obj.x = x;
