@@ -27,6 +27,9 @@ classdef vehicle < handle
         %arrays for correction action visualisation
         theta_error_output=[];
         speed_output=[];
+        lyap1=[];
+        lyap2=[];
+        lyap3=[];
 
         %plot parameters (only for debug)
         L = 2.5;     % Empattement
@@ -90,18 +93,29 @@ classdef vehicle < handle
                 xArGArr = xArG - obj.r*cos(obj.theta);
                 yArGArr = yArG - obj.r*sin(obj.theta);
 
-                %orientation :
-                plot([obj.x, obj.x + cos(obj.theta) * obj.lbase ], [obj.y, obj.y + sin(obj.theta) * obj.lbase],'Color','r','LineWidth',3);
-                
+                if obj.id_vehicle==1
+                    color = "r";
+                else
+                    color = "b";
+                end
+
                 %vehicle lines
-                plot(obj.x,obj.y,'r+');
                 line([xArG xArD],[yArG yArD])
-                line([xArGDev xArGArr],[yArGDev yArGArr],'Color','r','LineWidth',3)
-                line([xArDDev xArDArr],[yArDDev yArDArr],'Color','r','LineWidth',3)
+                line([xArGDev xArGArr],[yArGDev yArGArr],'Color',color,'LineWidth',3)
+                line([xArDDev xArDArr],[yArDDev yArDArr],'Color',color,'LineWidth',3)
                 
                 for i=0:0.2:(2*pi)
                     plot(obj.x+(obj.l/2)*cos(i),obj.y+(obj.l/2)*sin(i),'-','LineWidth',3);
                 end
+        end
+
+        function plot2(obj)
+            if obj.id_vehicle==1
+                    color = "r+";
+                else
+                    color = "b+";
+            end
+            plot(obj.x, obj.y, color, 'LineWidth', 2);
         end
         
         function update(obj, dt)
@@ -138,14 +152,14 @@ classdef vehicle < handle
                      sin(tar(1)) cos(tar(1))  tar(3)
                      0           0            1]; %transformation matrix
 
-            vehicle_base_target = T_O_T\[obj.x; obj.y; 1];
+            vehicle_base_vehicule = T_O_T\[obj.x; obj.y; 1];
             
-            x_vehicle_base_target = vehicle_base_target(1);
+            x_vehicle_base_target = vehicle_base_vehicule(1);
             error_distance = obj.get_distance_object(obj.targets(1));
             error_theta = abs(obj.theta-obj.targets(1).theta);
             
             % check if the target is already reached
-            if ( ((error_theta<=1.5) && (error_distance<=1)) || (x_vehicle_base_target>100))
+            if ( ((error_theta<=1.5) && (error_distance<=1)) || (x_vehicle_base_target>0))
                 obj.targets(1)=[];
             end
             
@@ -174,8 +188,23 @@ classdef vehicle < handle
             % ------ Check if there is a vehicle to follow ---------
             for i=1:size(obj.vehicles,2)
                 dist=obj.get_distance_object(obj.vehicles(i));
-                diff_ang=abs(obj.theta-obj.vehicles(i).theta);
-                if (dist <= 30 && diff_ang <= 0.7)
+                
+                veh = [obj.theta, obj.x, obj.y];
+                V_O_V = [cos(veh(1)) -sin(veh(1)) veh(2)
+                         sin(veh(1)) cos(veh(1))  veh(3)
+                         0           0            1]; %transformation matrix
+
+                vehicle_base_vehicule = V_O_V\[obj.vehicles(i).x; obj.vehicles(i).y; 1];
+                
+                x_vehicle_base_vehicle = vehicle_base_vehicule(1);
+                
+                if ~isempty(obj.vehicles(i).targets)
+                    diff_target = abs(obj.targets(1).theta-obj.vehicles(i).targets(1).theta);
+                else
+                    diff_target = 1;
+                end
+
+                if (dist <= 30 && x_vehicle_base_vehicle>0 && diff_target<0.1)
                     obj.actual_target = obj.compute_vehicle_offset(obj.vehicles(i));
                 end
             end
@@ -236,23 +265,32 @@ classdef vehicle < handle
 
             gamma_controller = atan(obj.lbase*curv);
 
+            %Calcul des 3 termes li�s � la fonction de Lyapunov
+            VFLyap1 = 0.5*d^2*K_d;
+            VFLyap2 = 0.5*d^2*K_l*SinE_RT^2;
+            VFLyap3 = K_o*(1- CosE_theta);
+
             % store controller effects for plot
             obj.theta_error_output = [obj.theta_error_output;[obj.theta obj.actual_target.theta]];
             obj.speed_output = [obj.speed_output; V];
+            obj.lyap1 = [obj.lyap1; VFLyap1];
+            obj.lyap2 = [obj.lyap2; VFLyap2];
+            obj.lyap3 = [obj.lyap3; VFLyap3];
             
             control = [V , gamma_controller];
         end
 
 
         function offset=compute_vehicle_offset(obj, vehicle)
+            disp([obj.id_vehicle,"following", vehicle.id_vehicle])
             error_y = vehicle.y-obj.y;
             error_x = vehicle.x-obj.x;
             phi = atan2(error_y, error_x);
 
-            x_offset = vehicle.x-cos(phi)*5;
-            y_offset = vehicle.y-sin(phi)*5;
+            x_offset = vehicle.x-cos(phi)*2;
+            y_offset = vehicle.y-sin(phi)*2;
 
-            offset = target(x_offset, y_offset, vehicle.theta, vehicle.v, 0);
+            offset = target(x_offset, y_offset, vehicle.theta, 0, 0);
         end
         
         
@@ -313,7 +351,42 @@ classdef vehicle < handle
             dist=sqrt((obj.x-object.x)^2+(obj.y-object.y)^2);
         end
 
-        %Ordonancement
+        function update_acc_vehicles(obj, vehicles)
+            obj.vehicles = vehicles;
+        end
+
+        function plot_corrector_action(obj)
+            figure(obj.id_vehicle*5+1);
+            plot(obj.theta_error_output(:,1),'red')
+            hold on;
+            plot(obj.theta_error_output(:,2),'blue')
+            legend('sortie','consigne')
+            title('Correction angle du véhicule')
+            
+            figure(obj.id_vehicle*5+2);
+            plot(obj.speed_output(:,1),'red')
+            legend('speed output')
+            title('Evolution de la vitesse')
+
+            figure(obj.id_vehicle*5+3);
+            plot(obj.lyap1(:,1),'red')
+            legend('lyapunov')
+            title('Evolution Lyap1')
+
+            figure(obj.id_vehicle*5+4);
+            plot(obj.lyap2(:,1),'red')
+            legend('lyapunov')
+            title('Evolution Lyap2')
+
+            figure(obj.id_vehicle*5+5);
+            plot(obj.lyap3(:,1),'red')
+            legend('lyapunov')
+            title('Evolution Lyap3')
+        end
+
+
+
+        %% Ordonancement ----------
         function obj = addDemand(obj,demand)
             obj.plannedDemands = [obj.plannedDemands;demand];
         end
