@@ -4,14 +4,13 @@ classdef VehicleCarla < vehicle
         Simulator
     end
     methods
-        function this = VehicleCarla(simulator, obstacles, id_vehicle,id_road)
-            disp(id_road);
+        function this = VehicleCarla(simulator, obstacles, nb_cars_since_beginning,id_road)
             point0 = simulator.MapDetail.Map(string(id_road)).waypoints{1};
             point1 = simulator.MapDetail.Map(string(id_road)).waypoints{2};
             pos0= point0.transform.location;
             pos1= point1.transform.location;
             theta = atan2(-pos1.y + pos0.y, pos1.x - pos0.x);
-            this@vehicle(pos0.x, pos0.y, theta, 0, obstacles, repmat(target(0,0,0,0,0), 0, 0), [], id_vehicle, id_road, 0);
+            this@vehicle(pos0.x, pos0.y, theta, 0, obstacles, repmat(target(0,0,0,0,0), 0, 0), [], nb_cars_since_beginning, id_road, 0);
             this.CarlaVehicle = Vehicle(simulator);
             this.Simulator = simulator;
             this.CarlaVehicle.setPosAndHeading(this.x, -this.y, this.theta);

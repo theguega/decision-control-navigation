@@ -346,6 +346,7 @@ classdef vehicle < handle
                 % vérification si on est au point d'arrivée d'une demande
                 % et supression de la demande si on y est
                 pos = get_pos_by_id(schedul.modified_nav,obj.plannedDemands(i).id_dep);
+
                 if (schedul.modified_nav.States.StateVector(pos,1)-2<x && x<schedul.modified_nav.States.StateVector(pos,1)+2) && ...
                     (schedul.modified_nav.States.StateVector(pos,2)-2<y && y<schedul.modified_nav.States.StateVector(pos,2)+2) && ...
                     (obj.plannedDemands(i).visited_dep == True)
@@ -399,7 +400,6 @@ classdef vehicle < handle
             pos = find(NavG.Links.Id_route == obj.id_road);
 
             id_dep = NavG.Links.EndStates(pos,2);
-            
             combs = getCombs(id_dep,demands);
             dual_combs = getdualcombs(combs);
             tmp1 = [];
