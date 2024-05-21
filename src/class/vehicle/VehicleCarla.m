@@ -10,10 +10,10 @@ classdef VehicleCarla < vehicle
             pos0= point0.transform.location;
             pos1= point1.transform.location;
             theta = atan2(-pos1.y + pos0.y, pos1.x - pos0.x);
-            this@vehicle(pos0.x, pos0.y, theta, 0, obstacles, repmat(target(0,0,0,0,0), 0, 0), [], nb_cars_since_beginning, id_road, 0);
+            this@vehicle(pos0.x, -pos0.y, theta, 0, obstacles, repmat(target(0,0,0,0,0), 0, 0), [], nb_cars_since_beginning, id_road, 0);
             this.CarlaVehicle = Vehicle(simulator);
             this.Simulator = simulator;
-            this.CarlaVehicle.setPosAndHeading(this.x, -this.y, this.theta);
+            this.CarlaVehicle.setPosAndHeading(this.x, this.y, this.theta);
         end
         function teleportToFirstTarget(this)
             % Call this after adding targets to the vehicle to sync the
@@ -37,27 +37,26 @@ classdef VehicleCarla < vehicle
         end
         function addTargetRoad(this, roadId)
             roadList = this.Simulator.MapDetail.Map(string(roadId)).waypoints;
+            startWaypoint = 1;
 
-            for i = 1:length(roadList)-1
-                road = roadList{i};
-                if isempty(this.targets)
-                    t0x = road.transform.location.x;
-                    t0y = -road.transform.location.y;
-                    t1x = roadList{i+1}.transform.location.x;
-                    t1y = -roadList{i+1}.transform.location.y;
-                else
-                    t0x = this.targets(end).x;
-                    t0y = this.targets(end).y;
-                    t1x = road.transform.location.x;
-                    t1y = -road.transform.location.y;
-                end
+            if isempty(this.targets)
+                t0x = roadList{1}.transform.location.x;
+                t0y = -roadList{1}.transform.location.y;
+                t1x = roadList{2}.transform.location.x;
+                t1y = -roadList{2}.transform.location.y;
                 theta_target = atan2(t1y - t0y, t1x - t0x);
-                if isempty(this.targets)
-                    this.targets(end+1) = target(t0x, t0y, theta_target, 0, 0);
-                else
-                    this.targets(end+1) = target(t1x, t1y, theta_target, 0, 0);
-                end
-                this.targets(end).plot();
+                this.targets(1) = target(t0x, t0y, theta_target, 0, 0);
+                startWaypoint = 2;
+            end
+
+            for i = startWaypoint:length(roadList)-1
+                road = roadList{i};
+                t0x = this.targets(end).x;
+                t0y = this.targets(end).y;
+                t1x = road.transform.location.x;
+                t1y = -road.transform.location.y;
+                theta_target = atan2(t1y - t0y, t1x - t0x);
+                this.targets(end+1) = target(t1x, t1y, theta_target, 0, 0);
             end
         end
     end
