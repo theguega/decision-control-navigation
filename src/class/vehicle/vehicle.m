@@ -421,7 +421,9 @@ classdef vehicle < handle
                 if obj.plannedDemands(i).visited_dep == false && ...
                     (schedul.modified_nav.States.StateVector(pos,1)-2<obj.y && obj.y<schedul.modified_nav.States.StateVector(pos,1)+2) && ...
                     (schedul.modified_nav.States.StateVector(pos,2)-2<obj.x && obj.x<schedul.modified_nav.States.StateVector(pos,2)+2)
+                    disp(obj.targets);
                     disp("Visited");
+                    disp(obj.targets);
                     obj.plannedDemands(i).visited_dep = true;
                 end
 
@@ -431,7 +433,7 @@ classdef vehicle < handle
 
                 if (schedul.modified_nav.States.StateVector(pos,1)-2<obj.x && obj.x<schedul.modified_nav.States.StateVector(pos,1)+2) && ...
                     (schedul.modified_nav.States.StateVector(pos,2)-2<obj.y && obj.y<schedul.modified_nav.States.StateVector(pos,2)+2) && ...
-                    (obj.plannedDemands(i).visited_dep == True)
+                    (obj.plannedDemands(i).visited_dep == true)
                     obj.addPassenger(obj.plannedDemands(i).nbpassengers *(-1));
                     obj.plannedDemands = [obj.plannedDemands(1:i-1);obj.plannedDemands(i+1:end)];
                     obj.updatePriority();                   
