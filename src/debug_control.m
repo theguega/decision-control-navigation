@@ -16,7 +16,7 @@ num_targets1 = size(pos_targets1, 1);
 targets1 = repmat(target(0,0,0,0,0), 1, num_targets1);
 for i = 1:num_targets1
     if i == num_targets1
-        theta_target= 0;
+        theta_target= targets1(size(targets1,2)-1).theta;
     else
         theta_target = atan2(pos_targets1(i+1,2)-pos_targets1(i,2), pos_targets1(i+1,1)-pos_targets1(i,1));
     end
@@ -30,7 +30,7 @@ num_targets2 = size(pos_targets2, 1);
 targets2 = repmat(target(0,0,0,0,0), 1, num_targets2);
 for i = 1:num_targets2
     if i == num_targets2
-        theta_target= 0;
+        theta_target= targets2(size(targets2,2)-1).theta;
     else
         theta_target = atan2(pos_targets2(i+1,2)-pos_targets2(i,2), pos_targets2(i+1,1)-pos_targets2(i,1));
     end
@@ -70,4 +70,4 @@ while true
     i=i+1;
 end
 
-%agent.plot_corrector_action
+agent.plot_corrector_action
