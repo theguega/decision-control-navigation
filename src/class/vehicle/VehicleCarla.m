@@ -14,6 +14,7 @@ classdef VehicleCarla < vehicle
             this.CarlaVehicle = Vehicle(simulator);
             this.Simulator = simulator;
             this.CarlaVehicle.setPosAndHeading(this.x, this.y, this.theta);
+            this.addTargetRoad(id_road);
         end
         function teleportToFirstTarget(this)
             % Call this after adding targets to the vehicle to sync the
@@ -30,10 +31,10 @@ classdef VehicleCarla < vehicle
                     this.actualPath.roads= this.actualPath.roads(2:end);
                     this.addTargetRoad(this.id_road);
                 end
-            else
-                update@vehicle(this, dt);
-                this.CarlaVehicle.setPosAndHeading(this.x, this.y, this.theta);
             end
+
+            update@vehicle(this, dt);
+            this.CarlaVehicle.setPosAndHeading(this.x, this.y, this.theta);
         end
         function addTargetRoad(this, roadId)
             roadList = this.Simulator.MapDetail.Map(string(roadId)).waypoints;
