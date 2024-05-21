@@ -239,6 +239,15 @@ classdef vehicle < handle
             K_o = 2;      %Main for E_theta and C_c ATTENTION NE DOIT PAS ETRE EGAL A "0", On divise sur K_o %%0.3;%1;%1.2/distf steering
             K_theta = 5;  %Main for E_Theta 0.8;%1.0
             K_rt = 0.001;     %Main for E_RT %%0.01
+            
+            %more oscillation but faster
+            % K_x = 0.3;    %Main for the overall velocity
+            % K_d = 10;     %Main for Ex (d in the Lypauniv function)
+            % K_l = 5;      %Main for "d", error E_RT and E_theta
+            % K_o = 2;      %Main for E_theta and C_c ATTENTION NE DOIT PAS ETRE EGAL A "0", On divise sur K_o %%0.3;%1;%1.2/distf steering
+            % K_theta = 5;  %Main for E_Theta 0.8;%1.0
+            % K_rt = 0.01;  %Main for E_RT %%0.01
+
 
             CosE_theta = cos(error_theta);
             SinE_theta = sin(error_theta);

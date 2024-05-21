@@ -11,7 +11,7 @@ for i = 1:num_obstacles
 end
 
 % targets for agent 1
-pos_targets1 = load("data/targets1.txt"); % targets = [x, y]
+pos_targets1 = load("data/problem.txt"); % targets = [x, y]
 num_targets1 = size(pos_targets1, 1);
 targets1 = repmat(target(0,0,0,0,0), 1, num_targets1);
 for i = 1:num_targets1
@@ -35,11 +35,11 @@ for i = 1:num_targets2
         theta_target = atan2(pos_targets2(i+1,2)-pos_targets2(i,2), pos_targets2(i+1,1)-pos_targets2(i,1));
     end
     targets2(i) = target(pos_targets2(i, 1), pos_targets2(i, 2), theta_target, 0, 0);
-    targets2(i).plot();
+    %targets2(i).plot();
 end
 
 agent = vehicle(targets1(1).x, targets1(1).y, targets1(1).theta, 0, obstacles, targets1, [],1, 0, 0);
-agent2 = vehicle(targets2(1).x, targets2(1).y, targets2(1).theta, 0, obstacles, targets2, [],2, 0 ,0); % vehicle
+agent2 = vehicle(targets2(1).x, targets2(1).y, targets2(1).theta, 0, obstacles, [], [],2, 0 ,0); % vehicle
 agent.update_acc_vehicles(agent2)
 agent2.update_acc_vehicles(agent)
 
@@ -54,7 +54,7 @@ while true
     if (~isempty(agent.targets))
         agent.update(dt);
         if (~rem(i, 10))
-            agent.plot2();
+            agent.plot();
             drawnow;
         end
     end
@@ -70,4 +70,4 @@ while true
     i=i+1;
 end
 
-agent.plot_corrector_action
+%agent.plot_corrector_action
