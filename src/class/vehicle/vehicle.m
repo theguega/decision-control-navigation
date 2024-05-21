@@ -269,6 +269,12 @@ classdef vehicle < handle
             vb=  K_x*(K_d*error_x + K_l*d*SinE_RT*sin(error_theta) + K_o*sin(error_theta)*curv);
             V =  obj.actual_target.v*cos(error_theta) + vb;
 
+            % Temporary fix car slowing down too much
+            if V < 3
+                V = 3;
+            end
+            V = V * 2;
+
             if ( (isnan(vb)) || (abs(V)> vmax)) %saturation of linear velocity
                 V = sign(V)*vmax/2;
             end
