@@ -356,7 +356,7 @@ classdef vehicle < handle
         function set_pos(obj, control)
             %update the position of the vehicle
             obj.v = control(1);
-            tmp_gamma = control(2);
+            tmp_gamma = control(2) / 5;
 
             obj.x = obj.x + obj.v * cos(obj.theta) * obj.dt;
             obj.y = obj.y + obj.v * sin(obj.theta) * obj.dt;
