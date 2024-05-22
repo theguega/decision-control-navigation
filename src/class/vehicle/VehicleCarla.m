@@ -24,7 +24,7 @@ classdef VehicleCarla < vehicle
             this.theta = this.targets(1).theta;
             this.CarlaVehicle.setPosAndHeading(this.x, this.y, this.theta);
         end
-        function update(this, dt)
+        function update(this, dt, sched)
             if length(this.targets)<=2
                 if ~isempty(this.actualPath.roads)
                     this.id_road=this.actualPath.roads(1);
@@ -33,7 +33,7 @@ classdef VehicleCarla < vehicle
                 end
             end
 
-            update@vehicle(this, dt);
+            update@vehicle(this, dt, sched);
             this.CarlaVehicle.setPosAndHeading(this.x, this.y, this.theta);
         end
         function addTargetRoad(this, roadId)
