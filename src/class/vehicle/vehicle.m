@@ -429,18 +429,46 @@ classdef vehicle < handle
 
                 % vérification si on est au point d'arrivée d'une demande
                 % et supression de la demande si on y est
-                
+                pos = get_pos_by_id(schedul.modified_nav,obj.plannedDemands(i).id_arr);
 
-                if (schedul.modified_nav.States.StateVector(pos,1)-2<obj.x && obj.x<schedul.modified_nav.States.StateVector(pos,1)+2) && ...
-                    (schedul.modified_nav.States.StateVector(pos,2)-2<obj.y && obj.y<schedul.modified_nav.States.StateVector(pos,2)+2) && ...
+                if (schedul.modified_nav.States.StateVector(pos,1)-2<obj.y && obj.y<schedul.modified_nav.States.StateVector(pos,1)+2) && ...
+                    (schedul.modified_nav.States.StateVector(pos,2)-2<obj.x && obj.x<schedul.modified_nav.States.StateVector(pos,2)+2) && ...
                     (obj.plannedDemands(i).visited_dep == true)
                     obj.addPassenger(obj.plannedDemands(i).nbpassengers *(-1));
+                    obj.deleteDemand(obj.plannedDemands(i),schedul);
                     obj.plannedDemands = [obj.plannedDemands(1:i-1);obj.plannedDemands(i+1:end)];
+                    if isempty(obj.plannedDemands)
+                        obj.plannedDemands = [];
+                    end
                     obj.updatePriority();                   
                 end
                     
             end
             
+        end
+
+        function deleteDemand(obj, demand,schedul)
+            id_mother_road_dep = demand.id_mother_road_dep;
+            id_mother_road_arr = demand.id_mother_road_arr;
+
+            pos_dep_in_table = find(schedul.tmp_roads.Base_road == id_mother_road_dep);
+            id_roads_to_rm = table2array(schedul.tmp_roads(pos_dep_in_table,["First_tmp_road","Second_tmp_road"]));
+
+            pos_arr_in_table = find(schedul.tmp_roads.Base_road == id_mother_road_arr);
+            id_roads_to_rm = [id_roads_to_rm, table2array(schedul.tmp_roads(pos_arr_in_table,["First_tmp_road","Second_tmp_road"]))];
+
+            pairs = [];
+
+            for i = 1:length(id_roads_to_rm)
+                pos = find(schedul.modified_nav.Links.Id_route == id_roads_to_rm(i));
+                pairs = [pairs; schedul.modified_nav.Links(pos,:).EndStates];
+            end
+
+            rmlink(schedul.modified_nav,pairs);
+            schedul.tmp_roads(pos_dep_in_table,:) = [];
+            pos_arr_in_table = find(schedul.tmp_roads.Base_road == id_mother_road_arr);
+            schedul.tmp_roads(pos_arr_in_table,:) = [];
+            rmstate(schedul.modified_nav,[demand.id_dep;demand.id_arr]);
         end
 
         function obj = updatePriority(obj)
