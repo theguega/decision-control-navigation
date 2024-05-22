@@ -25,8 +25,11 @@ classdef VehicleCarla < vehicle
             this.CarlaVehicle.setPosAndHeading(this.x, this.y, this.theta);
         end
         function update(this, dt, sched)
+            if nargin <= 2
+                sched = NaN;
+            end
             if length(this.targets)<=2
-                if ~isempty(this.actualPath.roads)
+                if ~isnan(this.actualPath) & ~isempty(this.actualPath.roads)
                     this.id_road=this.actualPath.roads(1);
                     this.actualPath.roads= this.actualPath.roads(2:end);
                     this.addTargetRoad(this.id_road);
