@@ -127,10 +127,16 @@ classdef vehicle < handle
             %}
             obj.dt = dt;
 
+            if isempty(obj.targets)
+                return;
+            end
+
             obj.target_selection() %update obj.actual_target
             control = obj.control_law(); % return controller command
             obj.set_pos(control) % update vehicle law
-            obj.updatePosition(sched);
+            if ~isnan(sched)
+                obj.updatePosition(sched);
+            end
         end
         
         function target_selection(obj)
@@ -165,7 +171,7 @@ classdef vehicle < handle
             end
             
             if ~isempty(obj.targets)
-                obj.actual_target = obj.targets(1);
+                obj.actual_target = obj.targets(min(3, length(obj.targets)));
             else 
                 return;
             end
@@ -269,12 +275,6 @@ classdef vehicle < handle
             vb=  K_x*(K_d*error_x + K_l*d*SinE_RT*sin(error_theta) + K_o*sin(error_theta)*curv);
             V =  obj.actual_target.v*cos(error_theta) + vb;
 
-            % Temporary fix car slowing down too much
-            if V < 3
-                V = 3;
-            end
-            V = V * 2;
-
             if ( (isnan(vb)) || (abs(V)> vmax)) %saturation of linear velocity
                 V = sign(V)*vmax/2;
             end
@@ -303,8 +303,9 @@ classdef vehicle < handle
             error_x = vehicle.x-obj.x;
             phi = atan2(error_y, error_x);
 
-            x_offset = vehicle.x-cos(phi)*2;
-            y_offset = vehicle.y-sin(phi)*2;
+            r = 4
+            x_offset = vehicle.x-cos(phi)*4;
+            y_offset = vehicle.y-sin(phi)*4;
 
             offset = target(x_offset, y_offset, vehicle.theta, 0, 0);
         end
