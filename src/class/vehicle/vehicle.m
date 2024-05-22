@@ -9,7 +9,7 @@ classdef vehicle < handle
         v = 0; %linear speed
 
         id_vehicle = 0; 
-        lbase = 3; %distance between front and back wheels
+        lbase = 4; %distance between front and back wheels
         
         dt = 0.1; % default discretisation time
         
@@ -166,7 +166,7 @@ classdef vehicle < handle
             error_theta = abs(obj.theta-obj.targets(1).theta);
             
             % check if the target is already reached
-            if ( ((error_theta<=1.5) && (error_distance<=1)) || (x_vehicle_base_target>0))
+            if ( ((error_theta<=1.5) && (error_distance<=3)) || (x_vehicle_base_target>0))
                 obj.targets(1)=[];
             end
             
@@ -228,10 +228,10 @@ classdef vehicle < handle
             error_x = cos(obj.theta)*xe + sin(obj.theta)*ye;
             error_y = -sin(obj.theta)*xe + cos(obj.theta)*ye;
             
-            error_theta = subtr_ang(obj.actual_target.theta, obj.theta);
+            error_theta = SoustractionAnglesAtan2(obj.actual_target.theta, obj.theta);
             
             thetaRT = atan2(ye,xe);
-            error_RT = subtr_ang(obj.actual_target.theta, thetaRT);
+            error_RT = SoustractionAnglesAtan2(obj.actual_target.theta, thetaRT);
 
             d=sqrt(error_x^2 + error_y^2);
 
@@ -356,7 +356,7 @@ classdef vehicle < handle
         function set_pos(obj, control)
             %update the position of the vehicle
             obj.v = control(1);
-            tmp_gamma = control(2) / 5;
+            tmp_gamma = control(2) / 3;
 
             obj.x = obj.x + obj.v * cos(obj.theta) * obj.dt;
             obj.y = obj.y + obj.v * sin(obj.theta) * obj.dt;
