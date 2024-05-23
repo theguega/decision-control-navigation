@@ -134,9 +134,9 @@ classdef vehicle < handle
             obj.target_selection() %update obj.actual_target
             control = obj.control_law(); % return controller command
             obj.set_pos(control) % update vehicle law
-            if ~isnan(sched)
-                obj.updatePosition(sched);
-            end
+            %if ~isnan(sched)
+            obj.updatePosition(sched);
+            %end
         end
         
         function target_selection(obj)
@@ -415,19 +415,17 @@ classdef vehicle < handle
 
         function obj = updatePosition(obj,schedul)           
             % gestion des demandes en cours
-            for i = 1:size(obj.plannedDemands,1)
+            for i = 1:length(obj.plannedDemands)
                 % vérification du fait que l'on soit au point de départ
                 % d'une demande
                 pos = get_pos_by_id(schedul.modified_nav,obj.plannedDemands(i).id_dep);
                 if obj.plannedDemands(i).visited_dep == false && ...
                     (schedul.modified_nav.States.StateVector(pos,1)-2<obj.y && obj.y<schedul.modified_nav.States.StateVector(pos,1)+2) && ...
                     (schedul.modified_nav.States.StateVector(pos,2)-2<obj.x && obj.x<schedul.modified_nav.States.StateVector(pos,2)+2)
-                    disp(obj.targets);
                     disp("Visited");
-                    disp(obj.targets);
                     obj.plannedDemands(i).visited_dep = true;
                 end
-
+                disp(obj.plannedDemands(i).id_dep);
                 % vérification si on est au point d'arrivée d'une demande
                 % et supression de la demande si on y est
                 pos = get_pos_by_id(schedul.modified_nav,obj.plannedDemands(i).id_arr);
@@ -435,6 +433,8 @@ classdef vehicle < handle
                 if (schedul.modified_nav.States.StateVector(pos,1)-2<obj.y && obj.y<schedul.modified_nav.States.StateVector(pos,1)+2) && ...
                     (schedul.modified_nav.States.StateVector(pos,2)-2<obj.x && obj.x<schedul.modified_nav.States.StateVector(pos,2)+2) && ...
                     (obj.plannedDemands(i).visited_dep == true)
+                    disp("Arrived");
+                    disp(obj.plannedDemands(i));
                     obj.addPassenger(obj.plannedDemands(i).nbpassengers *(-1));
                     obj.deleteDemand(obj.plannedDemands(i),schedul);
                     obj.plannedDemands = [obj.plannedDemands(1:i-1);obj.plannedDemands(i+1:end)];
