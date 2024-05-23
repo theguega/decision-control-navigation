@@ -425,7 +425,6 @@ classdef vehicle < handle
                     disp("Visited");
                     obj.plannedDemands(i).visited_dep = true;
                 end
-                disp(obj.plannedDemands(i).id_dep);
                 % vérification si on est au point d'arrivée d'une demande
                 % et supression de la demande si on y est
                 pos = get_pos_by_id(schedul.modified_nav,obj.plannedDemands(i).id_arr);

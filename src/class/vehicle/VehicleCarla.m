@@ -25,6 +25,8 @@ classdef VehicleCarla < vehicle
             this.CarlaVehicle.setPosAndHeading(this.x, this.y, this.theta);
         end
         function update(this, dt, sched)
+            this.actualPath.cost = this.updatecost();
+            disp(this.actualPath.cost);
             if nargin <= 2
                 sched = NaN;
             end
@@ -61,6 +63,15 @@ classdef VehicleCarla < vehicle
                 t1y = -road.transform.location.y;
                 theta_target = atan2(t1y - t0y, t1x - t0x);
                 this.targets(end+1) = target(t1x, t1y, theta_target, 0, 0);
+            end
+        end
+
+        function cost = updatecost(this)
+            cost=0;
+            for i=1:length(this.actualPath.roads)
+                id_road = this.actualPath.roads(i);
+                road = this.Simulator.MapDetail.Map(string(id_road));
+                cost = cost+road.length;
             end
         end
     end
