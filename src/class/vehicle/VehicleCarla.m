@@ -124,7 +124,7 @@ classdef VehicleCarla < vehicle
                 t1x = road.transform.location.x;
                 t1y = -road.transform.location.y;
                 theta_target = atan2(t1y - t0y, t1x - t0x);
-                this.targets(end+1) = target(t1x, t1y, theta_target, 0, 0);
+                this.targets(end+1) = target(t1x, t1y, theta_target, 30/3.6, 0);
             end
         end
 
