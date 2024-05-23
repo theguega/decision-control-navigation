@@ -28,7 +28,7 @@ classdef target < handle
             plot(obj.x, obj.y, 'k+', 'LineWidth', 2);
             speed = 1;
             if obj.v~=0
-                speed=obj.v;
+                speed=2;
             end
             plot([obj.x, obj.x + cos(obj.theta) * 3 * speed ], [obj.y, obj.y + sin(obj.theta) * 3 * speed]);
         end
