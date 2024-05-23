@@ -127,9 +127,9 @@ classdef vehicle < handle
             obj.target_selection() %update obj.actual_target
             control = obj.control_law(); % return controller command
             obj.set_pos(control) % update vehicle law
-            %if ~isnan(sched)
-            obj.updatePosition(sched);
-            %end
+            if ~isnan(sched)
+                obj.updatePosition(sched);
+            end
         end
         
         function target_selection(obj)

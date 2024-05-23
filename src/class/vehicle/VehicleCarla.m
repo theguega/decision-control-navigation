@@ -18,6 +18,7 @@ classdef VehicleCarla < vehicle
             this.Simulator = simulator;
             this.CarlaVehicle.setPosAndHeading(this.x, this.y, this.theta);
             this.addTargetRoad(id_road);
+            this.Junctions = containers.Map();
             this.isDeclared=false;
             this.isEngaged=false;
         end
@@ -38,19 +39,20 @@ classdef VehicleCarla < vehicle
             if length(this.targets)<=2
                 if ~isnan(this.actualPath) & ~isempty(this.actualPath.roads)
                     if this.isEngaged==true
+                        road = this.Simulator.MapDetail.Map(string(this.id_road));
                         this.isEngaged=false;
                         this.isDeclared=false;
-                        this.Simulator.MapDetail.Junctions(string(road.junction))=this.Simulator.MapDetail.Junctions(string(road.junction))-10;
+                        this.Simulator.MapDetail.Junctions(string(py.str(road.junction)))=this.Simulator.MapDetail.Junctions(string(py.str(road.junction)))-10;
                         this.id_road=this.actualPath.roads(1);
                         this.actualPath.roads= this.actualPath.roads(2:end);
                         this.addTargetRoad(this.id_road);
                     else
-                        road = this.Simulator.MapDetail.Map(string(this.id_road));
+                        nextroad = this.actualPath.roads(1);
+                        road = this.Simulator.MapDetail.Map(string(nextroad));
                         if road.junction>0
                             junction_id=road.junction;
-                            this.Simulator.MapDetail.Junction
                             if isKey(this.Junctions, road.junction)==false
-                                this.Simulator.MapDetail.Junctions(string(road.junction))=0;
+                                this.Simulator.MapDetail.Junctions(string(py.str(road.junction)))=0;
                             end
                             if road.sign==206
                                 disp('stop');
@@ -81,11 +83,11 @@ classdef VehicleCarla < vehicle
                             else
                                 disp('None');
                                 if this.isDeclared==false
-                                    this.Simulator.MapDetail.Junctions(string(road.junction))=this.Simulator.MapDetail.Junctions(string(road.junction))+5;
+                                    this.Simulator.MapDetail.Junctions(string(py.str(road.junction)))=this.Simulator.MapDetail.Junctions(string(py.str(road.junction)))+5;
                                     this.isDeclared=true;
                                 end
-                                if this.Simulator.MapDetail.Junctions(string(road.junction))<=1
-                                        this.Simulator.MapDetail.Junctions(string(road.junction))=this.Simulator.MapDetail.Junctions(string(road.junction))-5+10;
+                                if this.Simulator.MapDetail.Junctions(string(py.str(road.junction)))<=1
+                                        this.Simulator.MapDetail.Junctions(string(py.str(road.junction)))=this.Simulator.MapDetail.Junctions(string(py.str(road.junction)))-5+10;
                                         this.id_road=this.actualPath.roads(1);
                                         this.actualPath.roads= this.actualPath.roads(2:end);
                                         this.addTargetRoad(this.id_road);
