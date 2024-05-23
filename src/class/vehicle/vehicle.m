@@ -151,7 +151,7 @@ classdef vehicle < handle
             end
             
             if ~isempty(obj.targets)
-                obj.actual_target = obj.targets(min(1, length(obj.targets)));
+                obj.actual_target = obj.targets(min(2, length(obj.targets)));
             else 
                 return;
             end
@@ -161,7 +161,7 @@ classdef vehicle < handle
             % ------ Check if there is an obstacle to avoid ---------
             
             obstacle_to_avoid=[];
-            smoother = 5;
+            smoother = 10;
             for i=1:size(obj.obstacles,2)
                 dist = obj.get_distance_object(obj.obstacles(i));
                 if dist<=(obj.obstacles(i).getRayonInfluence()+smoother) 
@@ -315,15 +315,14 @@ classdef vehicle < handle
 
             [t,xc] = ode23(@(t, xc) EquationDiff_Tourbillon(t, xc, limitcycles), [0, 2], [error_x, error_y]);
             
-            i=1;
+            i=3;
             tar = [xc(i,1)+obstacle.x, xc(i,2)+obstacle.y];
             tar_1 = [xc(i+1,1)+obstacle.x, xc(i+1,2)+obstacle.y];
             x_diff = tar_1(1) - tar(1);
             y_diff = tar_1(2) - tar(2);
             theta_target = atan2(y_diff, x_diff);
             
-            tmp = target(tar(1),tar(2),theta_target,10/(obstacle.getRayonInfluence),0);
-            tmp.plot()
+            tmp = target(tar(1),tar(2),theta_target,7/(obstacle.getRayonInfluence),0);
             avoid_target = tmp;
         end
         
@@ -331,7 +330,7 @@ classdef vehicle < handle
         function set_pos(obj, control)
             %update the position of the vehicle
             obj.v = control(1);
-            tmp_gamma = control(2) / 2;
+            tmp_gamma = control(2) / 3;
 
             obj.x = obj.x + obj.v * cos(obj.theta) * obj.dt;
             obj.y = obj.y + obj.v * sin(obj.theta) * obj.dt;
@@ -348,8 +347,8 @@ classdef vehicle < handle
         end
 
         function update_obstacles_to_avoid(obj, obstacles)
-
-            end
+            obj.obstacles = obstacles;
+        end
 
         function plot_corrector_action(obj)
             figure(obj.id_vehicle*5+1);
