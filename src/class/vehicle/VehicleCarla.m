@@ -32,7 +32,6 @@ classdef VehicleCarla < vehicle
         end
         function update(this, dt, sched)
             this.actualPath.cost = this.updatecost();
-            disp(this.actualPath.cost);
             if nargin <= 2
                 sched = NaN;
             end
