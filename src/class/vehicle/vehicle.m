@@ -20,21 +20,17 @@ classdef vehicle < handle
 
         %controllers memory
         actual_target;
-        obstacle_to_avoid;
-        %vehicle_to_follow;
-        limitcycles=0;
+        distance_securite_acc = 5;
 
-        %arrays for correction action visualisation
+        %plot parameters (only for debug)
+        L = 2.5;     % Empattement
+        l = 4;  % Largeur des essieux
+        r = 1;     % Rayon des roues
         theta_error_output=[];
         speed_output=[];
         lyap1=[];
         lyap2=[];
         lyap3=[];
-
-        %plot parameters (only for debug)
-        L = 2.5;     % Empattement
-        l = 3;  % Largeur des essieux
-        r = 1;     % Rayon des roues
 
         %Parametres Ordonancement
         id_road;
@@ -59,9 +55,6 @@ classdef vehicle < handle
                 obj.gamma = gamma;
                 obj.obstacles = obstacles;
                 obj.vehicles = vehicles;
-
-                %% filtrer targets and remove targets that are above obstacles
-                % for loop on every targets / obstacles
                 obj.targets = targets;
                 
                 %Ordonancement
@@ -140,24 +133,11 @@ classdef vehicle < handle
         end
         
         function target_selection(obj)
-            %{
-            cette fonction regarde si il a des obstacles à eviter
-            sinon si il y a un vehicule a suivre
-            sinon on suit les cibles prédéfinis par l'utilisateurs
-            
-            on défini alors la cible défini par une des 3 situations
-            et on la suit
-            %}
-
-            %reset obstacle to avoid and vehicle to follow
-            obj.obstacle_to_avoid = obstacle(0,0,0,0);
-            %obj.vehicle_to_follow = vehicle(0,0,0,0,[],[],[],0);
-
             % ------ Remove reached targets ---------
             tar = [obj.targets(1).theta, obj.targets(1).x, obj.targets(1).y];
             T_O_T = [cos(tar(1)) -sin(tar(1)) tar(2)
                      sin(tar(1)) cos(tar(1))  tar(3)
-                     0           0            1]; %transformation matrix
+                     0           0            1];
 
             vehicle_base_vehicule = T_O_T\[obj.x; obj.y; 1];
             
@@ -175,21 +155,47 @@ classdef vehicle < handle
             else 
                 return;
             end
-            
-            
+
+
 
             % ------ Check if there is an obstacle to avoid ---------
-            minimal_distance=-1;
+            
+            obstacle_to_avoid=[];
+            smoother = 5;
             for i=1:size(obj.obstacles,2)
                 dist = obj.get_distance_object(obj.obstacles(i));
-                if ( dist<=(obj.obstacles(i).getRayonInfluence()) && dist<= minimal_distance )
-                    minimal_distance = dist;
-                    obj.obstacle_to_avoid = obj.obstacles(i);
-
-                    %obj.actual_target = obj.compute_limited_cycles
+                if dist<=(obj.obstacles(i).getRayonInfluence()+smoother) 
+                    obstacle_to_avoid = obj.obstacles(i);
                 end
             end
             
+            if ~isempty(obstacle_to_avoid)
+                %remove every waypoint located in the rayon of influence of the obstacle
+                for i=1:size(obj.targets,1)
+                    dist = sqrt((obj.targets(i).x-obstacle_to_avoid.x)^2+(obj.targets(i).y-obstacle_to_avoid.y)^2);
+                    if dist<=(obstacle_to_avoid.getRayonInfluence()+smoother)
+                        obj.targets(i)=[];
+                    end
+                end
+                x_err = obj.targets(1).x - obstacle_to_avoid.x;
+                y_err = obj.targets(1).y - obstacle_to_avoid.y;
+                xi = atan2(y_err, x_err);
+                
+                obs = [xi, obstacle_to_avoid.x, obstacle_to_avoid.y];
+                V_O_Obs = [cos(obs(1)) -sin(obs(1)) obs(2)
+                           sin(obs(1)) cos(obs(1))  obs(3)
+                           0           0            1];
+
+                vehicle_base_obstacle = V_O_Obs\[obj.x; obj.y; 1];
+
+                x_vehicle_base_obstacle = vehicle_base_obstacle(1);
+
+                %activate only if the obstacle is not already passed
+                if(x_vehicle_base_obstacle<=0)
+                    obj.actual_target = obj.compute_limited_cycles(obstacle_to_avoid);
+                end
+            end
+
 
 
             % ------ Check if there is a vehicle to follow ---------
@@ -199,7 +205,7 @@ classdef vehicle < handle
                 veh = [obj.theta, obj.x, obj.y];
                 V_O_V = [cos(veh(1)) -sin(veh(1)) veh(2)
                          sin(veh(1)) cos(veh(1))  veh(3)
-                         0           0            1]; %transformation matrix
+                         0           0            1];
 
                 vehicle_base_vehicule = V_O_V\[obj.vehicles(i).x; obj.vehicles(i).y; 1];
                 
@@ -246,15 +252,6 @@ classdef vehicle < handle
             K_o = 2;      %Main for E_theta and C_c ATTENTION NE DOIT PAS ETRE EGAL A "0", On divise sur K_o %%0.3;%1;%1.2/distf steering
             K_theta = 5;  %Main for E_Theta 0.8;%1.0
             K_rt = 0.001;     %Main for E_RT %%0.01
-            
-            %more oscillation but faster
-            % K_x = 0.3;    %Main for the overall velocity
-            % K_d = 10;     %Main for Ex (d in the Lypauniv function)
-            % K_l = 5;      %Main for "d", error E_RT and E_theta
-            % K_o = 2;      %Main for E_theta and C_c ATTENTION NE DOIT PAS ETRE EGAL A "0", On divise sur K_o %%0.3;%1;%1.2/distf steering
-            % K_theta = 5;  %Main for E_Theta 0.8;%1.0
-            % K_rt = 0.01;  %Main for E_RT %%0.01
-
 
             CosE_theta = cos(error_theta);
             SinE_theta = sin(error_theta);
@@ -262,11 +259,12 @@ classdef vehicle < handle
             SinE_RT = sin(error_RT);
             CosE_RT = cos(error_RT);
 
-            curv =   curvature_t/CosE_theta + ... %%1st term
-                     (d^2*curvature_t*K_l*SinE_RT*CosE_RT)/(K_o*SinE_theta*CosE_theta)+ ...%%2sd term
-                     K_theta*(SinE_theta/CosE_theta)+ ... %%3rd term
-                     (K_d*error_y - K_l*d*SinE_RT*CosE_theta)/(K_o*CosE_theta)+... %%4rd term
-                     (K_rt*SinE_RT^2)/(SinE_theta*CosE_theta);
+            a=curvature_t/CosE_theta;
+            b=(d^2*curvature_t*K_l*SinE_RT*CosE_RT)/(K_o*SinE_theta*CosE_theta);
+            c=K_theta*(SinE_theta/CosE_theta);
+            d=(K_d*error_y - K_l*d*SinE_RT*CosE_theta)/(K_o*CosE_theta);
+            e=(K_rt*SinE_RT^2)/(SinE_theta*CosE_theta);
+            curv = a+b+c+d+e;
 
             if isnan(curv) %% CASE WHERE THERE IS A PROBLEME OF COMPUTATIONS
                 curv = 0.0001;
@@ -298,65 +296,42 @@ classdef vehicle < handle
 
 
         function offset=compute_vehicle_offset(obj, vehicle)
-            disp([obj.id_vehicle,"following", vehicle.id_vehicle])
             error_y = vehicle.y-obj.y;
             error_x = vehicle.x-obj.x;
             phi = atan2(error_y, error_x);
 
-            r = 4
-            x_offset = vehicle.x-cos(phi)*4;
-            y_offset = vehicle.y-sin(phi)*4;
+            x_offset = vehicle.x-cos(phi)*obj.distance_securite_acc;
+            y_offset = vehicle.y-sin(phi)*obj.distance_securite_acc;
 
             offset = target(x_offset, y_offset, vehicle.theta, 0, 0);
         end
         
         
         
-        function avoiding_target=compute_limited_cycles(obj, obstacle)
-            %% FOR RUBEN : 
+        function avoid_target=compute_limited_cycles(obj, obstacle)
+            error_x = obj.x - obstacle.x;
+            error_y = obj.y - obstacle.y;
+            limitcycles=obstacle.getRayonInfluence;
 
-            %% Edit this function
-
-            %compute the datas for the obstacle avoidance controller
-            error_x = obj.x - obj.obstacle_to_avoid.x;
-            error_y = obj.y - obj.obstacle_to_avoid.y;
+            [t,xc] = ode23(@(t, xc) EquationDiff_Tourbillon(t, xc, limitcycles), [0, 2], [error_x, error_y]);
             
-            %transformation matrix
-            X_D_O = obj.actual_target.x - obj.obstacle_to_avoid.x;
-            Y_D_O = obj.actual_target.y - obj.obstacle_to_avoid.y;
-            alpha = atan2(Y_D_O, X_D_O);
-            T_O_A = [cos(alpha) -sin(alpha) 0 obj.obstacle_to_avoid.x
-                     sin(alpha)  cos(alpha) 0 obj.obstacle_to_avoid.y
-                     0           0          1 0
-                     0           0          0 1];
+            i=1;
+            tar = [xc(i,1)+obstacle.x, xc(i,2)+obstacle.y];
+            tar_1 = [xc(i+1,1)+obstacle.x, xc(i+1,2)+obstacle.y];
+            x_diff = tar_1(1) - tar(1);
+            y_diff = tar_1(2) - tar(2);
+            theta_target = atan2(y_diff, x_diff);
             
-            obstacle_coords = T_O_A\[obj.x; obj.y; 0; 1];
-            X_obst = obstacle_coords(1);
-            
-            % get rayoncyclelimite
-            if (X_obst <= 0)
-                obj.limitcycles=(obj.obstacle_to_avoid.getRayonInfluence+obj.l)-0.3;
-            else
-                obj.limitcycles=obj.limitcycles+0.03;
-            end
-            
-            x_dot = error_y + error_x * ((obj.limitcycles^2) - (error_x^2) - (error_y^2));
-            y_dot = -error_x + error_y * ((obj.limitcycles^2) - (error_x^2) - (error_y^2));
-            theta_dot = atan2(y_dot, x_dot);
-            
-            X0 = [x_dot, y_dot];
-            xc = ode23(@(t, y) EquationDiff_Tourbillon(t, y, obj.limitcycles), [0, 0.2], X0);
-            theta_controller = atan2((xc.y(2, 2) - xc.y(1, 2)), (xc.y(2, 1) - xc.y(1, 1)));
-            error_theta=SoustractionAnglesAtan2(theta_dot, obj.theta);
-            
-            avoiding_target = [error_theta; theta_controller];
+            tmp = target(tar(1),tar(2),theta_target,10/(obstacle.getRayonInfluence),0);
+            tmp.plot()
+            avoid_target = tmp;
         end
         
         
         function set_pos(obj, control)
             %update the position of the vehicle
             obj.v = control(1);
-            tmp_gamma = control(2) / 3;
+            tmp_gamma = control(2);
 
             obj.x = obj.x + obj.v * cos(obj.theta) * obj.dt;
             obj.y = obj.y + obj.v * sin(obj.theta) * obj.dt;
@@ -371,6 +346,10 @@ classdef vehicle < handle
         function update_acc_vehicles(obj, vehicles)
             obj.vehicles = vehicles;
         end
+
+        function update_obstacles_to_avoid(obj, obstacles)
+
+            end
 
         function plot_corrector_action(obj)
             figure(obj.id_vehicle*5+1);
@@ -400,7 +379,6 @@ classdef vehicle < handle
             legend('lyapunov')
             title('Evolution Lyap3')
         end
-
 
 
         %% Ordonancement ----------
