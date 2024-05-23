@@ -208,7 +208,7 @@ classdef vehicle < handle
                 if ~isempty(obj.vehicles(i).targets)
                     diff_target = abs(obj.targets(1).theta-obj.vehicles(i).targets(1).theta);
                 else
-                    diff_target = 1;
+                    diff_target = abs(obj.actual_target.theta-obj.vehicles(i).actual_target.theta);
                 end
 
                 if (dist <= 30 && x_vehicle_base_vehicle>0 && diff_target<0.1)
