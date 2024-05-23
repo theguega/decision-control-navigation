@@ -143,7 +143,7 @@ classdef vehicle < handle
             
             x_vehicle_base_target = vehicle_base_vehicule(1);
             error_distance = obj.get_distance_object(obj.targets(1));
-            error_theta = abs(obj.theta-obj.targets(1).theta);
+            error_theta = abs(SoustractionAnglesAtan2(obj.theta, obj.targets(1).theta));
             
             % check if the target is already reached
             if ( ((error_theta<=1.5) && (error_distance<=3)) || (x_vehicle_base_target>0))
@@ -151,7 +151,7 @@ classdef vehicle < handle
             end
             
             if ~isempty(obj.targets)
-                obj.actual_target = obj.targets(min(3, length(obj.targets)));
+                obj.actual_target = obj.targets(min(1, length(obj.targets)));
             else 
                 return;
             end
@@ -331,7 +331,7 @@ classdef vehicle < handle
         function set_pos(obj, control)
             %update the position of the vehicle
             obj.v = control(1);
-            tmp_gamma = control(2);
+            tmp_gamma = control(2) / 2;
 
             obj.x = obj.x + obj.v * cos(obj.theta) * obj.dt;
             obj.y = obj.y + obj.v * sin(obj.theta) * obj.dt;
