@@ -2,6 +2,9 @@ classdef VehicleCarla < vehicle
     properties
         CarlaVehicle
         Simulator
+        Junctions
+        isDeclared
+        isEngaged
     end
     methods
         function this = VehicleCarla(simulator, obstacles, nb_cars_since_beginning,id_road,isEgo)
@@ -15,6 +18,8 @@ classdef VehicleCarla < vehicle
             this.Simulator = simulator;
             this.CarlaVehicle.setPosAndHeading(this.x, this.y, this.theta);
             this.addTargetRoad(id_road);
+            this.isDeclared=false;
+            this.isEngaged=false;
         end
         function teleportToFirstTarget(this)
             % Call this after adding targets to the vehicle to sync the
@@ -32,12 +37,69 @@ classdef VehicleCarla < vehicle
             end
             if length(this.targets)<=2
                 if ~isnan(this.actualPath) & ~isempty(this.actualPath.roads)
-                    this.id_road=this.actualPath.roads(1);
-                    this.actualPath.roads= this.actualPath.roads(2:end);
-                    this.addTargetRoad(this.id_road);
+                    if this.isEngaged==true
+                        this.isEngaged=false;
+                        this.isDeclared=false;
+                        this.Simulator.MapDetail.Junctions(string(road.junction))=this.Simulator.MapDetail.Junctions(string(road.junction))-10;
+                        this.id_road=this.actualPath.roads(1);
+                        this.actualPath.roads= this.actualPath.roads(2:end);
+                        this.addTargetRoad(this.id_road);
+                    else
+                        road = this.Simulator.MapDetail.Map(string(this.id_road));
+                        if road.junction>0
+                            junction_id=road.junction;
+                            this.Simulator.MapDetail.Junction
+                            if isKey(this.Junctions, road.junction)==false
+                                this.Simulator.MapDetail.Junctions(string(road.junction))=0;
+                            end
+                            if road.sign==206
+                                disp('stop');
+                                if this.isDeclared==false
+                                    this.Simulator.MapDetail.Junctions(string(road.junction))=this.Simulator.MapDetail.Junctions(string(road.junction))+1;
+                                    this.isDeclared=true;
+                                    if this.Simulator.MapDetail.Junctions(string(road.junction))<=1                         
+                                        this.Simulator.MapDetail.Junctions(string(road.junction))=this.Simulator.MapDetail.Junctions(string(road.junction))-1+10;
+                                        this.id_road=this.actualPath.roads(1);
+                                        this.actualPath.roads= this.actualPath.roads(2:end);
+                                        this.addTargetRoad(this.id_road);
+                                        this.isEngaged=true;
+                                    end
+                                end
+                            elseif road.sign==205
+                                disp('yield');
+                                if this.isDeclared==false
+                                    this.Simulator.MapDetail.Junctions(string(road.junction))=this.Simulator.MapDetail.Junctions(string(road.junction))+3;
+                                    this.isDeclared=true;
+                                end
+                                if this.Simulator.MapDetail.Junctions(string(road.junction))<=4
+                                        this.Simulator.MapDetail.Junctions(string(road.junction))=this.Simulator.MapDetail.Junctions(string(road.junction))-3+10;
+                                        this.id_road=this.actualPath.roads(1);
+                                        this.actualPath.roads= this.actualPath.roads(2:end);
+                                        this.addTargetRoad(this.id_road);
+                                        this.isEngaged=true;
+                                end
+                            else
+                                disp('None');
+                                if this.isDeclared==false
+                                    this.Simulator.MapDetail.Junctions(string(road.junction))=this.Simulator.MapDetail.Junctions(string(road.junction))+5;
+                                    this.isDeclared=true;
+                                end
+                                if this.Simulator.MapDetail.Junctions(string(road.junction))<=1
+                                        this.Simulator.MapDetail.Junctions(string(road.junction))=this.Simulator.MapDetail.Junctions(string(road.junction))-5+10;
+                                        this.id_road=this.actualPath.roads(1);
+                                        this.actualPath.roads= this.actualPath.roads(2:end);
+                                        this.addTargetRoad(this.id_road);
+                                        this.isEngaged=true;
+                                end
+                            end
+                        else
+                            this.id_road=this.actualPath.roads(1);
+                            this.actualPath.roads= this.actualPath.roads(2:end);
+                            this.addTargetRoad(this.id_road);
+                        end
+                    end
                 end
             end
-
             update@vehicle(this, dt, sched);
             this.CarlaVehicle.setPosAndHeading(this.x, this.y, this.theta);
         end
