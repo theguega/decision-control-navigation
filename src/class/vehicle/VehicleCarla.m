@@ -41,52 +41,52 @@ classdef VehicleCarla < vehicle
                         road = this.Simulator.MapDetail.Map(string(this.id_road));
                         this.isEngaged=false;
                         this.isDeclared=false;
-                        this.Simulator.MapDetail.Junctions(string(py.str(road.junction)))=this.Simulator.MapDetail.Junctions(string(py.str(road.junction)))-10;
+                        this.Simulator.MapDetail.Junctions(string(py.str(road.junctionId)))=this.Simulator.MapDetail.Junctions(string(py.str(road.junctionId)))-10;
                         this.id_road=this.actualPath.roads(1);
                         this.actualPath.roads= this.actualPath.roads(2:end);
                         this.addTargetRoad(this.id_road);
                     else
                         nextroad = this.actualPath.roads(1);
                         road = this.Simulator.MapDetail.Map(string(nextroad));
-                        if road.junction>0
-                            junction_id=road.junction;
-                            if isKey(this.Junctions, road.junction)==false
-                                this.Simulator.MapDetail.Junctions(string(py.str(road.junction)))=0;
+                        if road.junctionId>0
+                            junction_id=road.junctionId;
+                            if isKey(this.Junctions, road.junctionId)==false
+                                this.Simulator.MapDetail.Junctions(string(py.str(road.junctionId)))=0;
                             end
-                            if road.sign==206
+                            if road.signType == "206"
                                 disp('stop');
                                 if this.isDeclared==false
-                                    this.Simulator.MapDetail.Junctions(string(road.junction))=this.Simulator.MapDetail.Junctions(string(road.junction))+1;
+                                    this.Simulator.MapDetail.Junctions(string(road.junctionId))=this.Simulator.MapDetail.Junctions(string(road.junctionId))+1;
                                     this.isDeclared=true;
-                                    if this.Simulator.MapDetail.Junctions(string(road.junction))<=1                         
-                                        this.Simulator.MapDetail.Junctions(string(road.junction))=this.Simulator.MapDetail.Junctions(string(road.junction))-1+10;
+                                    if this.Simulator.MapDetail.Junctions(string(road.junctionId))<=1                         
+                                        this.Simulator.MapDetail.Junctions(string(road.junctionId))=this.Simulator.MapDetail.Junctions(string(road.junctionId))-1+10;
                                         this.id_road=this.actualPath.roads(1);
                                         this.actualPath.roads= this.actualPath.roads(2:end);
                                         this.addTargetRoad(this.id_road);
                                         this.isEngaged=true;
                                     end
                                 end
-                            elseif road.sign==205
+                            elseif road.signType == "205"
                                 disp('yield');
                                 if this.isDeclared==false
-                                    this.Simulator.MapDetail.Junctions(string(road.junction))=this.Simulator.MapDetail.Junctions(string(road.junction))+3;
+                                    this.Simulator.MapDetail.Junctions(string(road.junctionId))=this.Simulator.MapDetail.Junctions(string(road.junctionId))+3;
                                     this.isDeclared=true;
                                 end
-                                if this.Simulator.MapDetail.Junctions(string(road.junction))<=4
-                                        this.Simulator.MapDetail.Junctions(string(road.junction))=this.Simulator.MapDetail.Junctions(string(road.junction))-3+10;
+                                if this.Simulator.MapDetail.Junctions(string(road.junctionId))<=4
+                                        this.Simulator.MapDetail.Junctions(string(road.junctionId))=this.Simulator.MapDetail.Junctions(string(road.junctionId))-3+10;
                                         this.id_road=this.actualPath.roads(1);
                                         this.actualPath.roads= this.actualPath.roads(2:end);
                                         this.addTargetRoad(this.id_road);
                                         this.isEngaged=true;
                                 end
                             else
-                                disp('None');
+                                %disp('None');
                                 if this.isDeclared==false
-                                    this.Simulator.MapDetail.Junctions(string(py.str(road.junction)))=this.Simulator.MapDetail.Junctions(string(py.str(road.junction)))+5;
+                                    this.Simulator.MapDetail.Junctions(string(py.str(road.junctionId)))=this.Simulator.MapDetail.Junctions(string(py.str(road.junctionId)))+5;
                                     this.isDeclared=true;
                                 end
-                                if this.Simulator.MapDetail.Junctions(string(py.str(road.junction)))<=1
-                                        this.Simulator.MapDetail.Junctions(string(py.str(road.junction)))=this.Simulator.MapDetail.Junctions(string(py.str(road.junction)))-5+10;
+                                if this.Simulator.MapDetail.Junctions(string(py.str(road.junctionId)))<=1
+                                        this.Simulator.MapDetail.Junctions(string(py.str(road.junctionId)))=this.Simulator.MapDetail.Junctions(string(py.str(road.junctionId)))-5+10;
                                         this.id_road=this.actualPath.roads(1);
                                         this.actualPath.roads= this.actualPath.roads(2:end);
                                         this.addTargetRoad(this.id_road);
@@ -134,7 +134,7 @@ classdef VehicleCarla < vehicle
             for i=1:length(this.actualPath.roads)
                 id_road = this.actualPath.roads(i);
                 road = this.Simulator.MapDetail.Map(string(id_road));
-                cost = cost+road.length;
+                cost = cost+road.lengthMeters;
             end
         end
     end
