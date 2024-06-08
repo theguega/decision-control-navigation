@@ -1,36 +1,54 @@
-classdef vehicle < handle
-    properties
+% *****************************************************************************
+% *    Title: Decision Making Algorithm and Control Law for Autonomous Vehicle Fleet
+% *    Author: Guegan Theo
+% *    Tutor: Adouane Lounis
+% *    School: Université de Technologie de Compiègne (UTC) - Computer Science
+% *    Date: 2024
+% *****************************************************************************
 
-        %Parametres Control
+classdef vehicle < handle
+    % The vehicle object adapts its position and speed to reach targets depending on the environment.
+
+    properties
+        %% ------ vehicle parameters ------
         x = 0;
         y = 0;
         theta = 0;
-        gamma = 0; %angle of the front wheel
-        v = 0; %linear speed
-
+        % angle of the front wheel
+        gamma = 0;
+        % linear speed
+        v = 0; 
         id_vehicle = 0; 
-        lbase = 4; %distance between front and back wheels
+        % distance between front and back wheels
+        lbase = 4; 
         
-        dt = 0.1; % default discretisation time
-        
-        %handler
-        targets = []; %target objects
-        obstacles = []; %obstacle objects
-        vehicles = []; %vehicle objects
+        %% ------ handler for the vehicle environment ------
+        targets = [];
+        obstacles = [];
+        vehicles = []; 
 
-        %controllers memory
+        %% ------ controller parameters ------
         actual_target;
         distance_securite_acc = 5;
+        K_x = 0.15;     
+        K_d = 10;     
+        K_l = 2;     
+        K_o = 2;     
+        K_theta = 5; 
+        K_rt = 0.001;    
 
-        %plot parameters (only for debug)
-        L = 2.5;     % Empattement
-        l = 4;  % Largeur des essieux
-        r = 1;     % Rayon des roues
+        %% ------ plot parameters (only for debug) ------
+        L = 2.5;   
+        l = 4;  
+        r = 1;     
         theta_error_output=[];
         speed_output=[];
         lyap1=[];
         lyap2=[];
         lyap3=[];
+        
+        %default discretisation time
+        dt = 0.1; 
 
         %Parametres Ordonancement
         id_road;
@@ -39,54 +57,55 @@ classdef vehicle < handle
         plannedDemands;
         actualPath;
         priority;
-
-
     end
     
     methods
-        %constructor
-        function obj = vehicle(x, y, theta, gamma, obstacles, targets, vehicles, id_vehicle, id_road, dist_from_start)
-             
+        function this = vehicle(x, y, theta, gamma, obstacles, targets, vehicles, id_vehicle, id_road, dist_from_start)
             if nargin == 10
-                %Control
-                obj.x = x;
-                obj.y = y;
-                obj.theta = theta;
-                obj.gamma = gamma;
-                obj.obstacles = obstacles;
-                obj.vehicles = vehicles;
-                obj.targets = targets;
+                %decisions-control
+                this.x = x;
+                this.y = y;
+                this.theta = theta;
+                this.gamma = gamma;
+                this.obstacles = obstacles;
+                this.vehicles = vehicles;
+                this.targets = targets;
                 
-                %Ordonancement
-                obj.id_vehicle = id_vehicle;
-                obj.id_road = id_road;
-                obj.dist_from_start = dist_from_start;
-                obj.nbpassengers = 0;
-                obj.plannedDemands = [];
-                obj.actualPath = NaN;
-                obj.priority = NaN;
+                %ordonancement
+                this.id_vehicle = id_vehicle;
+                this.id_road = id_road;
+                this.dist_from_start = dist_from_start;
+                this.nbpassengers = 0;
+                this.plannedDemands = [];
+                this.actualPath = NaN;
+                this.priority = NaN;
             else
                  error('Incorrect number of arguments for vehicle constructor');
             end
          end
         
-        %plot the vehicle pos - debug mode
-        function plot(obj)
-                xArD = obj.x + obj.l/2*sin(obj.theta); % right back wheel
-                yArD = obj.y - obj.l/2*cos(obj.theta);
-                xArDDev = xArD + obj.r*cos(obj.theta);
-                yArDDev = yArD + obj.r*sin(obj.theta);
-                xArDArr = xArD - obj.r*cos(obj.theta);
-                yArDArr = yArD - obj.r*sin(obj.theta);
-                
-                xArG = obj.x - obj.l/2*sin(obj.theta); % left back wheel
-                yArG = obj.y + obj.l/2*cos(obj.theta);
-                xArGDev = xArG + obj.r*cos(obj.theta);
-                yArGDev = yArG + obj.r*sin(obj.theta);
-                xArGArr = xArG - obj.r*cos(obj.theta);
-                yArGArr = yArG - obj.r*sin(obj.theta);
+        function plot(this)
+                % plot the vehicle pos - used in debug mode
+                arguments
+                    this vehicle
+                end
+                % right back wheel
+                xArD = this.x + this.l/2*sin(this.theta); 
+                yArD = this.y - this.l/2*cos(this.theta);
+                xArDDev = xArD + this.r*cos(this.theta);
+                yArDDev = yArD + this.r*sin(this.theta);
+                xArDArr = xArD - this.r*cos(this.theta);
+                yArDArr = yArD - this.r*sin(this.theta);
 
-                if obj.id_vehicle==1
+                % left back wheel
+                xArG = this.x - this.l/2*sin(this.theta); 
+                yArG = this.y + this.l/2*cos(this.theta);
+                xArGDev = xArG + this.r*cos(this.theta);
+                yArGDev = yArG + this.r*sin(this.theta);
+                xArGArr = xArG - this.r*cos(this.theta);
+                yArGArr = yArG - this.r*sin(this.theta);
+                
+                if this.id_vehicle==1
                     color = "r";
                 else
                     color = "b";
@@ -98,259 +117,329 @@ classdef vehicle < handle
                 line([xArDDev xArDArr],[yArDDev yArDArr],'Color',color,'LineWidth',3)
                 
                 for i=0:0.2:(2*pi)
-                    plot(obj.x+(obj.l/2)*cos(i),obj.y+(obj.l/2)*sin(i),'-','LineWidth',3);
+                    plot(this.x+(this.l/2)*cos(i),this.y+(this.l/2)*sin(i),'-','LineWidth',3);
                 end
         end
 
-        function plot2(obj)
-            if obj.id_vehicle==1
+        function plot2(this)
+            % simple plot the vehicle pos - used in debug mode
+            arguments
+                this vehicle
+            end
+
+            if this.id_vehicle==1
                     color = "r+";
                 else
                     color = "b+";
             end
-            plot(obj.x, obj.y, color, 'LineWidth', 2);
+            plot(this.x, this.y, color, 'LineWidth', 2);
         end
         
-        function update(obj, dt, sched)
-            %{
-            cette fonction calcule la cible à atteindre
-            prépare les datas pour la loi de commande
-            recupère la commande
-            et actualise la position
-            %}
-            obj.dt = dt;
+        function update(this, dt, sched)
+            % Update is called every iteration and defines the
+            % discretization time for the vehicle.
+            % 
+            % If the vehicle still has targets to reach, update calls the
+            % target selection algorithm, the control law, and finally,
+            % adapts the vehicle's position.
 
-            if isempty(obj.targets)
+            arguments
+                this vehicle
+                dt double
+                sched %scheduler or NaN
+            end
+
+            this.dt = dt;
+            if isempty(this.targets)
                 return;
             end
+            
+            % update the actual target to reach depending on the env
+            this.target_selection()
+            % compute target data and return the controller command
+            control = this.control_law();
+            % update the vehicle position
+            this.set_pos(control)
 
-            obj.target_selection() %update obj.actual_target
-            control = obj.control_law(); % return controller command
-            obj.set_pos(control) % update vehicle law
             if ~isnan(sched)
-                obj.updatePosition(sched);
+                this.updatePosition(sched);
             end
         end
+
+        function update_acc_vehicles(obj, vehicles)
+            % allow simulator to update the list of vehicles in the
+            % simulation
+            obj.vehicles = vehicles;
+        end
+
+        function update_obstacles_to_avoid(obj, obstacles)
+            % allow simulator to update the list of obstacles in the
+            % simulation
+            obj.obstacles = obstacles;
+        end
+    end
+
+    methods (Access = private)
         
-        function target_selection(obj)
-            % ------ Remove reached targets ---------
-            tar = [obj.targets(1).theta, obj.targets(1).x, obj.targets(1).y];
+        function target_selection(this)
+            % Define the next target to reach depending on the environment.
+            % 
+            % By default, the vehicle follows the path given by the
+            % scheduling. If the target is already reached,
+            % target_selection removes it from the vehicle's handler.
+            % 
+            % If the vehicle is near an obstacle, we call
+            % compute_limited_cycles to get a new target that will allow
+            % our vehicle to avoid the obstacle.
+            %
+            % Finally, if the vehicle is near and behind another one, a new
+            % target is created based on an offset from the vehicle ahead by
+            % calling compute_vehicle_offset.
+            arguments
+                this vehicle
+            end
+
+
+
+            %% ------ Target Tracking ---------
+            % transformation matrix from absolute base to target base
+            tar = [this.targets(1).theta, this.targets(1).x, this.targets(1).y];
             T_O_T = [cos(tar(1)) -sin(tar(1)) tar(2)
                      sin(tar(1)) cos(tar(1))  tar(3)
                      0           0            1];
-
-            vehicle_base_vehicule = T_O_T\[obj.x; obj.y; 1];
             
+            % position of the vehicle in target base
+            vehicle_base_vehicule = T_O_T\[this.x; this.y; 1];
             x_vehicle_base_target = vehicle_base_vehicule(1);
-            error_distance = obj.get_distance_object(obj.targets(1));
-            error_theta = abs(SoustractionAnglesAtan2(obj.theta, obj.targets(1).theta));
+            error_distance = this.get_distance_object(this.targets(1));
+            error_theta = abs(SoustractionAnglesAtan2(this.theta, this.targets(1).theta));
             
-            % check if the target is already reached
+            % if the target is reached, removed it
             if ( ((error_theta<=1.5) && (error_distance<=3)) || (x_vehicle_base_target>0))
-                obj.targets(1)=[];
+                this.targets(1)=[];
             end
             
-            if ~isempty(obj.targets)
-                obj.actual_target = obj.targets(min(2, length(obj.targets)));
+            % we define the actual target as the second target of the list
+            % for better anticipation
+            if ~isempty(this.targets)
+                this.actual_target = this.targets(min(2, length(this.targets)));
             else 
                 return;
             end
 
 
 
-            % ------ Check if there is an obstacle to avoid ---------
-            
+            %% ------ ACC MODE ---------
+            for i=1:size(this.vehicles,2)
+                dist=this.get_distance_object(this.vehicles(i));
+                
+                % transformation matrix from absolute base to vehicle base
+                veh = [this.theta, this.x, this.y];
+                V_O_V = [cos(veh(1)) -sin(veh(1)) veh(2)
+                         sin(veh(1)) cos(veh(1))  veh(3)
+                         0           0            1];
+                
+                % position of the vehicle in vehicle base
+                vehicle_base_vehicule = V_O_V\[this.vehicles(i).x; this.vehicles(i).y; 1];
+                x_vehicle_base_vehicle = vehicle_base_vehicule(1);
+                
+                % difference of future targets of the two vehicles
+                if ~isempty(this.vehicles(i).targets)
+                    diff_target = abs(this.targets(1).theta-this.vehicles(i).targets(1).theta);
+                else
+                    diff_target = abs(this.actual_target.theta-this.vehicles(i).actual_target.theta);
+                end
+                
+                % if the two vehicles are going in the same direction and
+                % the vehicle is behind another, we create a new target
+                if (dist <= 30 && x_vehicle_base_vehicle>0 && diff_target<0.1)
+                    this.actual_target = this.compute_vehicle_offset(this.vehicles(i));
+                end
+            end
+
+
+
+            %% ------ Obstacle Avoidance ---------
+            % detect if the vehicle is in the circle of influence of the
+            % vehicle
             obstacle_to_avoid=[];
+            % smoother allow to activate the obtacle avoidance earlyier
             smoother = 10;
-            for i=1:size(obj.obstacles,2)
-                dist = obj.get_distance_object(obj.obstacles(i));
-                if dist<=(obj.obstacles(i).getRayonInfluence()+smoother) 
-                    obstacle_to_avoid = obj.obstacles(i);
+            for i=1:size(this.obstacles,2)
+                dist = this.get_distance_object(this.obstacles(i));
+                if dist<=(this.obstacles(i).getRayonInfluence()+smoother) 
+                    obstacle_to_avoid = this.obstacles(i);
                 end
             end
             
             if ~isempty(obstacle_to_avoid)
-                %remove every waypoint located in the rayon of influence of the obstacle
-                for i=1:size(obj.targets,1)
-                    dist = sqrt((obj.targets(i).x-obstacle_to_avoid.x)^2+(obj.targets(i).y-obstacle_to_avoid.y)^2);
+                % remove targets from scheduling that are under obstacles
+                for i=1:size(this.targets,1)
+                    dist = sqrt((this.targets(i).x-obstacle_to_avoid.x)^2+(this.targets(i).y-obstacle_to_avoid.y)^2);
                     if dist<=(obstacle_to_avoid.getRayonInfluence()+smoother)
-                        obj.targets(i)=[];
+                        this.targets(i)=[];
                     end
                 end
-                x_err = obj.targets(1).x - obstacle_to_avoid.x;
-                y_err = obj.targets(1).y - obstacle_to_avoid.y;
-                xi = atan2(y_err, x_err);
                 
+                % transformation matrix from absolute base to obstacle base 
+                x_err = this.targets(1).x - obstacle_to_avoid.x;
+                y_err = this.targets(1).y - obstacle_to_avoid.y;
+                xi = atan2(y_err, x_err);
                 obs = [xi, obstacle_to_avoid.x, obstacle_to_avoid.y];
                 V_O_Obs = [cos(obs(1)) -sin(obs(1)) obs(2)
                            sin(obs(1)) cos(obs(1))  obs(3)
                            0           0            1];
-
-                vehicle_base_obstacle = V_O_Obs\[obj.x; obj.y; 1];
-
+                
+                % position of the vehicle in obstacle base
+                vehicle_base_obstacle = V_O_Obs\[this.x; this.y; 1];
                 x_vehicle_base_obstacle = vehicle_base_obstacle(1);
 
-                %activate only if the obstacle is not already passed
+                % if the obstacle is not overpass, we create a new target
                 if(x_vehicle_base_obstacle<=0)
-                    obj.actual_target = obj.compute_limited_cycles(obstacle_to_avoid);
-                end
-            end
-
-
-
-            % ------ Check if there is a vehicle to follow ---------
-            for i=1:size(obj.vehicles,2)
-                dist=obj.get_distance_object(obj.vehicles(i));
-                
-                veh = [obj.theta, obj.x, obj.y];
-                V_O_V = [cos(veh(1)) -sin(veh(1)) veh(2)
-                         sin(veh(1)) cos(veh(1))  veh(3)
-                         0           0            1];
-
-                vehicle_base_vehicule = V_O_V\[obj.vehicles(i).x; obj.vehicles(i).y; 1];
-                
-                x_vehicle_base_vehicle = vehicle_base_vehicule(1);
-                
-                if ~isempty(obj.vehicles(i).targets)
-                    diff_target = abs(obj.targets(1).theta-obj.vehicles(i).targets(1).theta);
-                else
-                    diff_target = abs(obj.actual_target.theta-obj.vehicles(i).actual_target.theta);
-                end
-
-                if (dist <= 30 && x_vehicle_base_vehicle>0 && diff_target<0.1)
-                    obj.actual_target = obj.compute_vehicle_offset(obj.vehicles(i));
+                    this.actual_target = this.compute_limited_cycles(obstacle_to_avoid);
                 end
             end
         end
         
-        function control=control_law(obj)
-            vmax=50/3.6; % 50km/h
-
-            curvature_t=obj.actual_target.getCurv;
-
-            %compute the datas for the attraction controller
-            xe = obj.actual_target.x - obj.x;
-            ye = obj.actual_target.y - obj.y;
-            error_x = cos(obj.theta)*xe + sin(obj.theta)*ye;
-            error_y = -sin(obj.theta)*xe + cos(obj.theta)*ye;
-            
-            error_theta = SoustractionAnglesAtan2(obj.actual_target.theta, obj.theta);
-            
-            thetaRT = atan2(ye,xe);
-            error_RT = SoustractionAnglesAtan2(obj.actual_target.theta, thetaRT);
-
-            d=sqrt(error_x^2 + error_y^2);
-
-            if error_y > 0.1
-                curvature_t = 0;
+        function control=control_law(this)
+            % control_law adapts the speed and steering
+            % angle of the vehicle based on the target defined by
+            % the target selection algorithm.
+            arguments
+                this vehicle
             end
 
-            %Controller parameters
-            K_x = 0.15;      %Main for the overall velocity
-            K_d = 10;      %Main for Ex (d in the Lypauniv function)
-            K_l = 2;      %Main for "d", error E_RT and E_theta
-            K_o = 2;      %Main for E_theta and C_c ATTENTION NE DOIT PAS ETRE EGAL A "0", On divise sur K_o %%0.3;%1;%1.2/distf steering
-            K_theta = 5;  %Main for E_Theta 0.8;%1.0
-            K_rt = 0.001;     %Main for E_RT %%0.01
-
+            %compute the datas for the controller
+            curvature_t=this.actual_target.getCurv;
+            xe = this.actual_target.x - this.x;
+            ye = this.actual_target.y - this.y;
+            error_x = cos(this.theta)*xe + sin(this.theta)*ye;
+            error_y = -sin(this.theta)*xe + cos(this.theta)*ye;
+            error_theta = SoustractionAnglesAtan2(this.actual_target.theta, this.theta);         
+            thetaRT = atan2(ye,xe);
+            error_RT = SoustractionAnglesAtan2(this.actual_target.theta, thetaRT);
+            d=sqrt(error_x^2 + error_y^2);
+            if error_y > 0.1 
+                curvature_t = 0;
+            end
             CosE_theta = cos(error_theta);
             SinE_theta = sin(error_theta);
-
             SinE_RT = sin(error_RT);
             CosE_RT = cos(error_RT);
 
+            % control law
             a=curvature_t/CosE_theta;
-            b=(d^2*curvature_t*K_l*SinE_RT*CosE_RT)/(K_o*SinE_theta*CosE_theta);
-            c=K_theta*(SinE_theta/CosE_theta);
-            d=(K_d*error_y - K_l*d*SinE_RT*CosE_theta)/(K_o*CosE_theta);
-            e=(K_rt*SinE_RT^2)/(SinE_theta*CosE_theta);
+            b=(d^2*curvature_t*this.K_l*SinE_RT*CosE_RT)/(this.K_o*SinE_theta*CosE_theta);
+            c=this.K_theta*(SinE_theta/CosE_theta);
+            d=(this.K_d*error_y - this.K_l*d*SinE_RT*CosE_theta)/(this.K_o*CosE_theta);
+            e=(this.K_rt*SinE_RT^2)/(SinE_theta*CosE_theta);
             curv = a+b+c+d+e;
-
-            if isnan(curv) %% CASE WHERE THERE IS A PROBLEME OF COMPUTATIONS
+            if isnan(curv)
                 curv = 0.0001;
             end
-
-            vb=  K_x*(K_d*error_x + K_l*d*SinE_RT*sin(error_theta) + K_o*sin(error_theta)*curv);
-            V =  obj.actual_target.v*cos(error_theta) + vb;
-
-            if ( (isnan(vb)) || (abs(V)> vmax)) %saturation of linear velocity
+            
+            % linear velocity
+            vb=  this.K_x*(this.K_d*error_x + this.K_l*d*SinE_RT*sin(error_theta) + this.K_o*sin(error_theta)*curv);
+            V =  this.actual_target.v*cos(error_theta) + vb;
+            % saturation of linear velocity
+            vmax = 50/3.6;
+            if ( (isnan(vb)) || (abs(V)> vmax)) 
                 V = sign(V)*vmax/2;
             end
-
-            gamma_controller = atan(obj.lbase*curv);
-
-            %Calcul des 3 termes li�s � la fonction de Lyapunov
-            VFLyap1 = 0.5*d^2*K_d;
-            VFLyap2 = 0.5*d^2*K_l*SinE_RT^2;
-            VFLyap3 = K_o*(1- CosE_theta);
+            
+            % front wheel angle
+            gamma_controller = atan(this.lbase*curv);
 
             % store controller effects for plot
-            obj.theta_error_output = [obj.theta_error_output;[obj.theta obj.actual_target.theta]];
-            obj.speed_output = [obj.speed_output; V];
-            obj.lyap1 = [obj.lyap1; VFLyap1];
-            obj.lyap2 = [obj.lyap2; VFLyap2];
-            obj.lyap3 = [obj.lyap3; VFLyap3];
+            VFLyap1 = 0.5*d^2*this.K_d;
+            VFLyap2 = 0.5*d^2*this.K_l*SinE_RT^2;
+            VFLyap3 = this.K_o*(1- CosE_theta);
+            this.theta_error_output = [this.theta_error_output;[this.theta this.actual_target.theta]];
+            this.speed_output = [this.speed_output; V];
+            this.lyap1 = [this.lyap1; VFLyap1];
+            this.lyap2 = [this.lyap2; VFLyap2];
+            this.lyap3 = [this.lyap3; VFLyap3];
             
+            % ouput of the control law
             control = [V , gamma_controller];
         end
 
 
-        function offset=compute_vehicle_offset(obj, vehicle)
-            error_y = vehicle.y-obj.y;
-            error_x = vehicle.x-obj.x;
+        function offset=compute_vehicle_offset(obj, agent)
+            % compute_vehicle_offset gets the position of the vehicle 
+            % given as a parameter and returns a target object with the 
+            % same properties.
+            arguments
+                obj vehicle
+                agent vehicle
+            end
+            
+            % compute vehicle datas
+            error_y = agent.y-obj.y;
+            error_x = agent.x-obj.x;
             phi = atan2(error_y, error_x);
-
-            x_offset = vehicle.x-cos(phi)*obj.distance_securite_acc;
-            y_offset = vehicle.y-sin(phi)*obj.distance_securite_acc;
-
-            offset = target(x_offset, y_offset, vehicle.theta, 0, 0);
+            
+            % create the offset
+            x_offset = agent.x-cos(phi)*obj.distance_securite_acc;
+            y_offset = agent.y-sin(phi)*obj.distance_securite_acc;
+            offset = target(x_offset, y_offset, agent.theta, 0, 0);
         end
         
         
-        
-        function avoid_target=compute_limited_cycles(obj, obstacle)
-            error_x = obj.x - obstacle.x;
-            error_y = obj.y - obstacle.y;
-            limitcycles=obstacle.getRayonInfluence;
+        function avoid_target=compute_limited_cycles(this, obs)
+            % compute_limited_cycles gets the position of the obstacle 
+            % given as a parameter and returns a target object according 
+            % to the limited cycle defined around the obstacle.
+            arguments
+                this vehicle
+                obs obstacle
+            end
 
-            [t,xc] = ode23(@(t, xc) EquationDiff_Tourbillon(t, xc, limitcycles), [0, 2], [error_x, error_y]);
+            % compute obstacle datas
+            error_x = this.x - obs.x;
+            error_y = this.y - obs.y;
+            limitcycles=obs.getRayonInfluence;
+
+            % use ode to get the limit cycle
+            [~,xc] = ode23(@(t, xc) EquationDiff_Tourbillon(t, xc, limitcycles), [0, 2], [error_x, error_y]);
             
+            % get the 3 point of the trajectory around the obstacle as the
+            % next target to reach
             i=3;
-            tar = [xc(i,1)+obstacle.x, xc(i,2)+obstacle.y];
-            tar_1 = [xc(i+1,1)+obstacle.x, xc(i+1,2)+obstacle.y];
+            tar = [xc(i,1)+obs.x, xc(i,2)+obs.y];
+            tar_1 = [xc(i+1,1)+obs.x, xc(i+1,2)+obs.y];
             x_diff = tar_1(1) - tar(1);
             y_diff = tar_1(2) - tar(2);
             theta_target = atan2(y_diff, x_diff);
-            
-            tmp = target(tar(1),tar(2),theta_target,7/(obstacle.getRayonInfluence),0);
-            avoid_target = tmp;
+            avoid_target = target(tar(1),tar(2),theta_target,7/(obs.getRayonInfluence),0);
         end
         
         
-        function set_pos(obj, control)
-            %update the position of the vehicle
-            obj.v = control(1);
+        function set_pos(this, control)
+            % set_pos update the position of the vehicle according to the
+            % output of the control law
+            arguments
+                this vehicle
+                control %array
+            end
+            
+            % update vehicle coords
+            this.v = control(1);
             tmp_gamma = control(2) / 3;
-
-            obj.x = obj.x + obj.v * cos(obj.theta) * obj.dt;
-            obj.y = obj.y + obj.v * sin(obj.theta) * obj.dt;
-            obj.theta = obj.theta + (tan(tmp_gamma/obj.lbase)) * obj.v * obj.dt;
-            obj.gamma = tmp_gamma;
+            this.x = this.x + this.v * cos(this.theta) * this.dt;
+            this.y = this.y + this.v * sin(this.theta) * this.dt;
+            this.theta = this.theta + (tan(tmp_gamma/this.lbase)) * this.v * this.dt;
+            this.gamma = tmp_gamma;
         end
         
         function dist=get_distance_object(obj, object)
+            % calculate the distance between vehicle and object in
+            % parameters
             dist=sqrt((obj.x-object.x)^2+(obj.y-object.y)^2);
         end
 
-        function update_acc_vehicles(obj, vehicles)
-            obj.vehicles = vehicles;
-        end
-
-        function update_obstacles_to_avoid(obj, obstacles)
-            obj.obstacles = obstacles;
-        end
-
         function plot_corrector_action(obj)
+            % plotting function
             figure(obj.id_vehicle*5+1);
             plot(obj.theta_error_output(:,1),'red')
             hold on;
@@ -378,6 +467,17 @@ classdef vehicle < handle
             legend('lyapunov')
             title('Evolution Lyap3')
         end
+
+
+
+
+
+
+
+
+
+
+
 
 
         %% Ordonancement ----------

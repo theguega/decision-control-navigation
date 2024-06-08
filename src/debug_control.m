@@ -3,7 +3,7 @@ hold on;
 xlim([-35,125])
 ylim([-140,20])
 
-%---------------------------- OBSTACLES - MAP - VEHICULE ----------------------------
+%---------------------------- INIT : OBSTACLES - MAP - VEHICULE ----------------------------
 pos_obst = load("data/obstacles.txt"); %obstacles = [x, y, marge]
 num_obstacles = size(pos_obst, 1);
 obstacles = repmat(obstacle(0,0,0,0), 1, num_obstacles);
@@ -40,14 +40,19 @@ for i = 1:num_targets2
     targets2(i).plot();
 end
 
+% init agents
 agent = vehicle(targets1(1).x, targets1(1).y, targets1(1).theta, 0, obstacles, targets1, [],1, 0, 0);
 agent2 = vehicle(targets2(1).x, targets2(1).y, targets2(1).theta, 0, obstacles, targets2, [],2, 0 ,0); % vehicle
 agent.update_acc_vehicles(agent2)
 agent2.update_acc_vehicles(agent)
 
+
+
+
 %---------------------------- UPDATE VEHICLE POS ----------------------------
 i=0;
-dt=0.05; % fixed sample time
+% fixed sample time
+dt=0.05;
 while true
     if (isempty(agent.targets) && isempty(agent2.targets))
         break;
@@ -62,10 +67,10 @@ while true
     end
 
     if (~isempty(agent2.targets))
-        %agent2.update(dt,NaN);
+        agent2.update(dt,NaN);
         if (~rem(i, 10))
-            %agent2.plot();
-            %drawnow;
+            agent2.plot();
+            drawnow;
         end
     end
     
