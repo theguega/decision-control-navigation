@@ -2,138 +2,136 @@ classdef VehicleCarla < vehicle
     properties
         CarlaVehicle
         Simulator
-        Junctions
         isDeclared
         isEngaged
     end
     methods
-        function this = VehicleCarla(simulator, obstacles, nb_cars_since_beginning,id_road,isEgo)
+        function obj = VehicleCarla(simulator, obstacles, nb_cars_since_beginning,id_road,isEgo)
             point0 = simulator.MapDetail.Map(string(id_road)).waypoints{1};
             point1 = simulator.MapDetail.Map(string(id_road)).waypoints{2};
             pos0= point0.transform.location;
             pos1= point1.transform.location;
             theta = atan2(-pos1.y + pos0.y, pos1.x - pos0.x);
-            this@vehicle(pos0.x, -pos0.y, theta, 0, obstacles, repmat(target(0,0,0,0,0), 0, 0), [], nb_cars_since_beginning, id_road, 0);
-            this.CarlaVehicle = Vehicle(simulator,isEgo);
-            this.Simulator = simulator;
-            this.CarlaVehicle.setPosAndHeading(this.x, this.y, this.theta);
-            this.addTargetRoad(id_road);
-            this.Junctions = containers.Map();
-            this.isDeclared=false;
-            this.isEngaged=false;
+            obj@vehicle(pos0.x, -pos0.y, theta, 0, obstacles, repmat(target(0,0,0,0,0), 0, 0), [], nb_cars_since_beginning, id_road, 0);
+            obj.CarlaVehicle = Vehicle(simulator,isEgo);
+            obj.Simulator = simulator;
+            obj.CarlaVehicle.setPosAndHeading(obj.x, obj.y, obj.theta);
+            obj.addTargetRoad(id_road);
+            obj.isDeclared=false;
+            obj.isEngaged=false;
         end
-        function teleportToFirstTarget(this)
-            % Call this after adding targets to the vehicle to sync the
+        function teleportToFirstTarget(obj)
+            % Call obj after adding targets to the vehicle to sync the
             % "decision" vehicle and the CARLA vehicle's position and angle
-            this.x = this.targets(1).x;
-            this.y = this.targets(1).y;
-            this.theta = this.targets(1).theta;
-            this.CarlaVehicle.setPosAndHeading(this.x, this.y, this.theta);
+            obj.x = obj.targets(1).x;
+            obj.y = obj.targets(1).y;
+            obj.theta = obj.targets(1).theta;
+            obj.CarlaVehicle.setPosAndHeading(obj.x, obj.y, obj.theta);
         end
-        function update(this, dt, sched)
-            this.actualPath.cost = this.updatecost();
+        function update(obj, dt, sched)
+            obj.actualPath.cost = obj.updatecost();
             if nargin <= 2
                 sched = NaN;
             end
-            if length(this.targets)<=2
-                if ~isnan(this.actualPath) & ~isempty(this.actualPath.roads)
-                    if this.isEngaged==true
-                        road = this.Simulator.MapDetail.Map(string(this.id_road));
-                        this.isEngaged=false;
-                        this.isDeclared=false;
-                        this.Simulator.MapDetail.Junctions(string(py.str(road.junctionId)))=this.Simulator.MapDetail.Junctions(string(py.str(road.junctionId)))-10;
-                        this.id_road=this.actualPath.roads(1);
-                        this.actualPath.roads= this.actualPath.roads(2:end);
-                        this.addTargetRoad(this.id_road);
+            if length(obj.targets)<=2
+                if ~isnan(obj.actualPath) & ~isempty(obj.actualPath.roads)
+                    if obj.isEngaged==true
+                        road = obj.Simulator.MapDetail.Map(string(obj.id_road));
+                        obj.isEngaged=false;
+                        obj.isDeclared=false;
+                        obj.Simulator.MapDetail.Junctions(string(road.junctionId))=obj.Simulator.MapDetail.Junctions(string(road.junctionId))-10;
+                        obj.id_road=obj.actualPath.roads(1);
+                        obj.actualPath.roads= obj.actualPath.roads(2:end);
+                        obj.addTargetRoad(obj.id_road);
                     else
-                        nextroad = this.actualPath.roads(1);
-                        road = this.Simulator.MapDetail.Map(string(nextroad));
+                        nextroad = obj.actualPath.roads(1);
+                        road = obj.Simulator.MapDetail.Map(string(nextroad));
                         if road.junctionId>0
-                            junction_id=road.junctionId;
-                            if isKey(this.Junctions, road.junctionId)==false
-                                this.Simulator.MapDetail.Junctions(string(py.str(road.junctionId)))=0;
+                            if isKey(obj.Simulator.MapDetail.Junctions, string(road.junctionId))==false
+                                obj.Simulator.MapDetail.Junctions(string(road.junctionId))= 0;
                             end
-                            if road.signType == "206"
-                                disp('stop');
-                                if this.isDeclared==false
-                                    this.Simulator.MapDetail.Junctions(string(road.junctionId))=this.Simulator.MapDetail.Junctions(string(road.junctionId))+1;
-                                    this.isDeclared=true;
-                                    if this.Simulator.MapDetail.Junctions(string(road.junctionId))<=1                         
-                                        this.Simulator.MapDetail.Junctions(string(road.junctionId))=this.Simulator.MapDetail.Junctions(string(road.junctionId))-1+10;
-                                        this.id_road=this.actualPath.roads(1);
-                                        this.actualPath.roads= this.actualPath.roads(2:end);
-                                        this.addTargetRoad(this.id_road);
-                                        this.isEngaged=true;
-                                    end
+                            if road.signType == "206" %stop sign
+                                if obj.isDeclared==false
+                                    obj.Simulator.MapDetail.Junctions(string(road.junctionId))=obj.Simulator.MapDetail.Junctions(string(road.junctionId))+1;
+                                    obj.isDeclared=true;
                                 end
-                            elseif road.signType == "205"
-                                disp('yield');
-                                if this.isDeclared==false
-                                    this.Simulator.MapDetail.Junctions(string(road.junctionId))=this.Simulator.MapDetail.Junctions(string(road.junctionId))+3;
-                                    this.isDeclared=true;
+                                if obj.Simulator.MapDetail.Junctions(string(road.junctionId))<=1
+                                    obj.Simulator.MapDetail.Junctions(string(road.junctionId))=obj.Simulator.MapDetail.Junctions(string(road.junctionId))+9;
+                                    
+                                    obj.id_road=obj.actualPath.roads(1);
+                                    obj.actualPath.roads= obj.actualPath.roads(2:end);
+                                    obj.addTargetRoad(obj.id_road);
+                                    obj.isEngaged=true;
                                 end
-                                if this.Simulator.MapDetail.Junctions(string(road.junctionId))<=4
-                                        this.Simulator.MapDetail.Junctions(string(road.junctionId))=this.Simulator.MapDetail.Junctions(string(road.junctionId))-3+10;
-                                        this.id_road=this.actualPath.roads(1);
-                                        this.actualPath.roads= this.actualPath.roads(2:end);
-                                        this.addTargetRoad(this.id_road);
-                                        this.isEngaged=true;
+                            elseif road.signType == "205" %yield sign
+                                disp("yield");
+                                if obj.isDeclared==false
+                                    obj.Simulator.MapDetail.Junctions(string(road.junctionId))=obj.Simulator.MapDetail.Junctions(string(road.junctionId))+3;
+                                    obj.isDeclared=true;
                                 end
+                                if obj.Simulator.MapDetail.Junctions(string(road.junctionId))<=4
+                                        obj.Simulator.MapDetail.Junctions(string(road.junctionId))=obj.Simulator.MapDetail.Junctions(string(road.junctionId))+7;
+                                        obj.id_road=obj.actualPath.roads(1);
+                                        obj.actualPath.roads= obj.actualPath.roads(2:end);
+                                        obj.addTargetRoad(obj.id_road);
+                                        obj.isEngaged=true;
+                                end
+
                             else
-                                %disp('None');
-                                if this.isDeclared==false
-                                    this.Simulator.MapDetail.Junctions(string(py.str(road.junctionId)))=this.Simulator.MapDetail.Junctions(string(py.str(road.junctionId)))+5;
-                                    this.isDeclared=true;
+                                %if obj.CarlaVehicle.Actor.get_traffic_light_state().name == "Green" | obj.CarlaVehicle.Actor.get_traffic_light_state().name == "Unknown" | obj.CarlaVehicle.Actor.get_traffic_light_state().name == "Off"
+                                if obj.isDeclared==false
+                                    obj.Simulator.MapDetail.Junctions(string(road.junctionId))=obj.Simulator.MapDetail.Junctions(string(road.junctionId))+5;
+                                    obj.isDeclared=true;
                                 end
-                                if this.Simulator.MapDetail.Junctions(string(py.str(road.junctionId)))<=1
-                                        this.Simulator.MapDetail.Junctions(string(py.str(road.junctionId)))=this.Simulator.MapDetail.Junctions(string(py.str(road.junctionId)))-5+10;
-                                        this.id_road=this.actualPath.roads(1);
-                                        this.actualPath.roads= this.actualPath.roads(2:end);
-                                        this.addTargetRoad(this.id_road);
-                                        this.isEngaged=true;
+                                if obj.Simulator.MapDetail.Junctions(string(road.junctionId))<=14
+                                        obj.Simulator.MapDetail.Junctions(string(road.junctionId))=obj.Simulator.MapDetail.Junctions(string(road.junctionId))+5;
+                                        obj.id_road=obj.actualPath.roads(1);
+                                        obj.actualPath.roads= obj.actualPath.roads(2:end);
+                                        obj.addTargetRoad(obj.id_road);
+                                        obj.isEngaged=true;
                                 end
                             end
                         else
-                            this.id_road=this.actualPath.roads(1);
-                            this.actualPath.roads= this.actualPath.roads(2:end);
-                            this.addTargetRoad(this.id_road);
+                            obj.id_road=obj.actualPath.roads(1);
+                            obj.actualPath.roads= obj.actualPath.roads(2:end);
+                            obj.addTargetRoad(obj.id_road);
                         end
                     end
                 end
             end
-            update@vehicle(this, dt, sched);
-            this.CarlaVehicle.setPosAndHeading(this.x, this.y, this.theta);
+            update@vehicle(obj, dt, sched);
+            obj.CarlaVehicle.setPosAndHeading(obj.x, obj.y, obj.theta);
         end
-        function addTargetRoad(this, roadId)
-            roadList = this.Simulator.MapDetail.Map(string(roadId)).waypoints;
+        function addTargetRoad(obj, roadId)
+            roadList = obj.Simulator.MapDetail.Map(string(roadId)).waypoints;
             startWaypoint = 1;
 
-            if isempty(this.targets)
+            if isempty(obj.targets)
                 t0x = roadList{1}.transform.location.x;
                 t0y = -roadList{1}.transform.location.y;
                 t1x = roadList{2}.transform.location.x;
                 t1y = -roadList{2}.transform.location.y;
                 theta_target = atan2(t1y - t0y, t1x - t0x);
-                this.targets(1) = target(t0x, t0y, theta_target, 0, 0);
+                obj.targets(1) = target(t0x, t0y, theta_target, 0, 0);
                 startWaypoint = 2;
             end
 
             for i = startWaypoint:length(roadList)-1
                 road = roadList{i};
-                t0x = this.targets(end).x;
-                t0y = this.targets(end).y;
+                t0x = obj.targets(end).x;
+                t0y = obj.targets(end).y;
                 t1x = road.transform.location.x;
                 t1y = -road.transform.location.y;
                 theta_target = atan2(t1y - t0y, t1x - t0x);
-                this.targets(end+1) = target(t1x, t1y, theta_target, 30/3.6, 0);
+                obj.targets(end+1) = target(t1x, t1y, theta_target, 30/3.6, 0);
             end
         end
 
-        function cost = updatecost(this)
+        function cost = updatecost(obj)
             cost=0;
-            for i=1:length(this.actualPath.roads)
-                id_road = this.actualPath.roads(i);
-                road = this.Simulator.MapDetail.Map(string(id_road));
+            for i=1:length(obj.actualPath.roads)
+                id_road = obj.actualPath.roads(i);
+                road = obj.Simulator.MapDetail.Map(string(id_road));
                 cost = cost+road.lengthMeters;
             end
         end
