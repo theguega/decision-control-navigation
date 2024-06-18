@@ -2,7 +2,6 @@ classdef VehicleCarla < vehicle
     properties
         CarlaVehicle
         Simulator
-        Junctions
         isDeclared
         isEngaged
     end
@@ -18,7 +17,6 @@ classdef VehicleCarla < vehicle
             this.Simulator = simulator;
             this.CarlaVehicle.setPosAndHeading(this.x, this.y, this.theta);
             this.addTargetRoad(id_road);
-            this.Junctions = containers.Map();
             this.isDeclared=false;
             this.isEngaged=false;
         end
