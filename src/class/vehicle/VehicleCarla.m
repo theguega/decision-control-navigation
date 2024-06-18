@@ -41,7 +41,7 @@ classdef VehicleCarla < vehicle
                         road = this.Simulator.MapDetail.Map(string(this.id_road));
                         this.isEngaged=false;
                         this.isDeclared=false;
-                        this.Simulator.MapDetail.Junctions(string(py.str(road.junctionId)))=this.Simulator.MapDetail.Junctions(string(py.str(road.junctionId)))-10;
+                        this.Simulator.MapDetail.Junctions(string(road.junctionId))=this.Simulator.MapDetail.Junctions(string(road.junctionId))-10;
                         this.id_road=this.actualPath.roads(1);
                         this.actualPath.roads= this.actualPath.roads(2:end);
                         this.addTargetRoad(this.id_road);
@@ -49,44 +49,41 @@ classdef VehicleCarla < vehicle
                         nextroad = this.actualPath.roads(1);
                         road = this.Simulator.MapDetail.Map(string(nextroad));
                         if road.junctionId>0
-                            junction_id=road.junctionId;
-                            if isKey(this.Junctions, road.junctionId)==false
-                                this.Simulator.MapDetail.Junctions(string(py.str(road.junctionId)))=0;
+                            if isKey(this.Simulator.MapDetail.Junctions, string(road.junctionId))==false
+                                this.Simulator.MapDetail.Junctions(string(road.junctionId))= 0;
                             end
-                            if road.signType == "206"
-                                disp('stop');
+                            if road.signType == "206" %stop sign
                                 if this.isDeclared==false
                                     this.Simulator.MapDetail.Junctions(string(road.junctionId))=this.Simulator.MapDetail.Junctions(string(road.junctionId))+1;
                                     this.isDeclared=true;
-                                    if this.Simulator.MapDetail.Junctions(string(road.junctionId))<=1                         
-                                        this.Simulator.MapDetail.Junctions(string(road.junctionId))=this.Simulator.MapDetail.Junctions(string(road.junctionId))-1+10;
-                                        this.id_road=this.actualPath.roads(1);
-                                        this.actualPath.roads= this.actualPath.roads(2:end);
-                                        this.addTargetRoad(this.id_road);
-                                        this.isEngaged=true;
-                                    end
                                 end
-                            elseif road.signType == "205"
-                                disp('yield');
+                                if this.Simulator.MapDetail.Junctions(string(road.junctionId))<=1
+                                    this.Simulator.MapDetail.Junctions(string(road.junctionId))=this.Simulator.MapDetail.Junctions(string(road.junctionId))+9;
+                                    
+                                    this.id_road=this.actualPath.roads(1);
+                                    this.actualPath.roads= this.actualPath.roads(2:end);
+                                    this.addTargetRoad(this.id_road);
+                                    this.isEngaged=true;
+                                end
+                            elseif road.signType == "205" %yield sign
                                 if this.isDeclared==false
                                     this.Simulator.MapDetail.Junctions(string(road.junctionId))=this.Simulator.MapDetail.Junctions(string(road.junctionId))+3;
                                     this.isDeclared=true;
                                 end
                                 if this.Simulator.MapDetail.Junctions(string(road.junctionId))<=4
-                                        this.Simulator.MapDetail.Junctions(string(road.junctionId))=this.Simulator.MapDetail.Junctions(string(road.junctionId))-3+10;
+                                        this.Simulator.MapDetail.Junctions(string(road.junctionId))=this.Simulator.MapDetail.Junctions(string(road.junctionId))+7;
                                         this.id_road=this.actualPath.roads(1);
                                         this.actualPath.roads= this.actualPath.roads(2:end);
                                         this.addTargetRoad(this.id_road);
                                         this.isEngaged=true;
                                 end
-                            else
-                                %disp('None');
+                            elseif this.CarlaVehicle.Actor.get_traffic_light_state().name == "Green" | this.CarlaVehicle.Actor.get_traffic_light_state().name == "Unknown" | this.CarlaVehicle.Actor.get_traffic_light_state().name == "Off" 
                                 if this.isDeclared==false
-                                    this.Simulator.MapDetail.Junctions(string(py.str(road.junctionId)))=this.Simulator.MapDetail.Junctions(string(py.str(road.junctionId)))+5;
+                                    this.Simulator.MapDetail.Junctions(string(road.junctionId))=this.Simulator.MapDetail.Junctions(string(road.junctionId))+5;
                                     this.isDeclared=true;
                                 end
-                                if this.Simulator.MapDetail.Junctions(string(py.str(road.junctionId)))<=1
-                                        this.Simulator.MapDetail.Junctions(string(py.str(road.junctionId)))=this.Simulator.MapDetail.Junctions(string(py.str(road.junctionId)))-5+10;
+                                if this.Simulator.MapDetail.Junctions(string(road.junctionId))<=14
+                                        this.Simulator.MapDetail.Junctions(string(road.junctionId))=this.Simulator.MapDetail.Junctions(string(road.junctionId))+5;
                                         this.id_road=this.actualPath.roads(1);
                                         this.actualPath.roads= this.actualPath.roads(2:end);
                                         this.addTargetRoad(this.id_road);
