@@ -467,6 +467,7 @@ classdef vehicle < handle
             legend('lyapunov')
             title('Evolution Lyap3')
         end
+    end
 
 
 
@@ -477,10 +478,8 @@ classdef vehicle < handle
 
 
 
-
-
-
-        %% Ordonancement ----------
+    %% Ordonancement ----------
+    methods
         function obj = addDemand(obj,demand)
             obj.plannedDemands = [obj.plannedDemands;demand];
         end
