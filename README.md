@@ -21,7 +21,7 @@ Technical documentation can be found on the following link : [Documentation Webs
 
 ## Running the project
 
-To run the project on MATLAB :
+To run the project on MATLAB_R2024a :
 - include `src`folder in MATLAB path
 - run `debug_control.m`
 
