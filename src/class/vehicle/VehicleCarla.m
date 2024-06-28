@@ -64,7 +64,6 @@ classdef VehicleCarla < vehicle
                                     obj.isEngaged=true;
                                 end
                             elseif road.signType == "205" %yield sign
-                                disp("yield");
                                 if obj.isDeclared==false
                                     obj.Simulator.MapDetail.Junctions(string(road.junctionId))=obj.Simulator.MapDetail.Junctions(string(road.junctionId))+3;
                                     obj.isDeclared=true;
@@ -78,7 +77,7 @@ classdef VehicleCarla < vehicle
                                 end
 
                             else
-                                %if obj.CarlaVehicle.Actor.get_traffic_light_state().name == "Green" | obj.CarlaVehicle.Actor.get_traffic_light_state().name == "Unknown" | obj.CarlaVehicle.Actor.get_traffic_light_state().name == "Off"
+                               if (road.junctionId~=149 & road.junctionId~=59) | (obj.CarlaVehicle.Actor.get_traffic_light_state().name == "Green" | obj.CarlaVehicle.Actor.get_traffic_light_state().name == "Unknown" | obj.CarlaVehicle.Actor.get_traffic_light_state().name == "Off")
                                 if obj.isDeclared==false
                                     obj.Simulator.MapDetail.Junctions(string(road.junctionId))=obj.Simulator.MapDetail.Junctions(string(road.junctionId))+5;
                                     obj.isDeclared=true;
@@ -90,6 +89,7 @@ classdef VehicleCarla < vehicle
                                         obj.addTargetRoad(obj.id_road);
                                         obj.isEngaged=true;
                                 end
+                               end
                             end
                         else
                             obj.id_road=obj.actualPath.roads(1);
