@@ -1,6 +1,6 @@
-# TX n°7491 - Control and Decision-Making architecture for a fleet of shared autonomous vehicles in a dense urban environment
+# Control and Decision-Making architecture for a fleet of shared autonomous vehicles in a dense urban environment
 
-This project implements a Decision-Making architecture and a control law for autonomous vehicles working both on MATLAB and Carla simulator.
+This project implements a Decision-Making architecture and a control law for autonomous vehicles working both on MATLAB and can be also integrated in Carla simulator.
 
 <div id="image-table">
     <table>
@@ -17,7 +17,7 @@ This project implements a Decision-Making architecture and a control law for aut
 
 ## Documentation
 
-Technical documentation can be found on the following link : [Documentation Website](https://utonome.gitlab.utc.fr/documentation/decisions-control/index.html)
+Technical documentation can be found on the following pdf : final-report.pdf
 
 ## Running the project
 
