@@ -17,7 +17,7 @@ This project implements a Decision-Making architecture and a control law for aut
 
 ## Documentation
 
-Technical documentation can be found on the following pdf : final-report.pdf
+Technical documentation can be found on the following pdf : [final-report.pdf](https://github.com/theguega/Autonomous-Vehicles-Decisions-Control/blob/main/final_report.pdf)
 
 ## Running the project
 
